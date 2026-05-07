@@ -1,0 +1,908 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+// Utility for cleaner class names
+function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
+
+// Reusable scroll reveal component
+const Reveal = ({ children, className, delay = 0, y = 50 }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [hoveredNav, setHoveredNav] = useState(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Add background when scrolled past top
+      if (currentScrollY > 50) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+
+      // Check if hero, featured work, or legacy sections are fully in view
+      const checkSectionInView = (ref) => {
+        if (!ref || !ref.current) return false;
+        const rect = ref.current.getBoundingClientRect();
+        // Hide navbar only when section is fully visible in viewport
+        return rect.top <= 0 && rect.bottom >= window.innerHeight;
+      };
+
+      const heroInView = checkSectionInView(heroRef);
+      const featuredInView = checkSectionInView(featuredWorkRef);
+      const legacyInView = checkSectionInView(legacyRef);
+
+      setIsHidden(heroInView || featuredInView || legacyInView);
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [heroRef, featuredWorkRef, legacyRef]);
+
+  // Body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
+  return (
+    <>
+      {/* Announcement Bar */}
+      <div className="bg-white w-full pt-2 px-2 md:pt-3 md:px-3">
+        <div className="w-full bg-[#A3F1D1] text-[#111212] text-center py-1.5 md:py-2 text-[10px] md:text-xs font-bold tracking-wider relative z-[51] rounded-xl md:rounded-[1rem]">
+          🚨 The Category Leaderboard - Live Now
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {hoveredNav && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[45] bg-black/10 backdrop-blur-md"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.header
+        className={cn(
+          "fixed w-[95%] left-1/2 -translate-x-1/2 z-50 px-6 md:px-12 flex justify-between items-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-full",
+          isScrolled ? "bg-white/30 backdrop-blur-md border border-white/40 py-4 top-4" : "bg-white/20 backdrop-blur-sm border border-white/30 py-6 top-6"
+        )}
+        initial={{ opacity: 1, scale: 1 }}
+        animate={{ opacity: isHidden ? 0 : 1, scale: isHidden ? 0.95 : 1 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        pointerEvents={isHidden ? "none" : "auto"}
+      >
+        {/* Logo Text */}
+        <div className="text-2xl font-semibold tracking-tighter text-[#1a1a1a] cursor-pointer flex items-center gap-1">
+          Rise at Seven<span className="text-lg">↘</span>
+        </div>
+
+        {/* Desktop Nav */}
+        <nav className="hidden xl:flex items-center space-x-2 text-[13px] font-bold tracking-wide text-[#1a1a1a]">
+          {['Services +', 'Industries +', 'International +', 'About +'].map((item) => (
+            <div 
+              key={item}
+              className="relative"
+              onMouseEnter={() => setHoveredNav(item)}
+              onMouseLeave={() => setHoveredNav(null)}
+            >
+              <a
+                href="#"
+                className={cn(
+                  "transition-all duration-300 px-4 py-2 rounded-full block",
+                  hoveredNav === item ? "bg-[#1a1a1a] text-white" : "text-[#1a1a1a] hover:text-gray-600"
+                )}
+              >
+                {item}
+              </a>
+              
+              <AnimatePresence>
+                {hoveredNav === item && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 15 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-4 bg-white rounded-[1.5rem] p-2 w-[350px] shadow-2xl z-[60] flex"
+                  >
+                    <div className="w-1/2 p-4 flex items-center justify-center text-center">
+                      <h3 className="text-xl font-bold tracking-tight text-[#111212] leading-tight">
+                        {item === 'Services +' ? 'B2B Marketing' : 
+                         item === 'Industries +' ? 'Retail & eCommerce' : 
+                         item === 'International +' ? 'Global Reach' : 'Our Story'}
+                      </h3>
+                    </div>
+                    <div className="w-1/2 rounded-xl overflow-hidden bg-gray-100 aspect-square relative">
+                      <img src={`https://picsum.photos/400/400?random=${item.length * 5}`} alt={item} className="absolute inset-0 w-full h-full object-cover" />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+          <a href="#" className="hover:text-gray-600 transition-colors relative flex items-center px-4 text-[#1a1a1a]">
+            Work
+            <span className="absolute top-0 right-0 bg-[#A3F1D1] text-black text-[10px] w-[16px] h-[16px] flex items-center justify-center rounded-full font-bold">25</span>
+          </a>
+          <a href="#" className="hover:text-gray-600 transition-colors px-2 text-[#1a1a1a]">Careers</a>
+          <a href="#" className="hover:text-gray-600 transition-colors px-2 text-[#1a1a1a]">Blog</a>
+          <a href="#" className="hover:text-gray-600 transition-colors px-2 text-[#1a1a1a]">Webinar</a>
+        </nav>
+
+        {/* Right Actions */}
+        <div className="flex items-center space-x-6 relative z-[65]">
+          <button className="hidden md:flex items-center gap-1.5 bg-[#1a1a1a] text-white px-6 py-2.5 rounded-full text-[13px] font-bold tracking-tight hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
+            Get In Touch <span>↗</span>
+          </button>
+          
+          {/* Hamburger */}
+          <button
+            className="xl:hidden w-10 h-10 flex flex-col justify-center items-center space-y-1.5 relative z-[65]"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <motion.span
+              animate={isOpen ? { rotate: 45, y: 8 } : { rotate: 0, y: 0 }}
+              className="w-8 h-[2px] bg-[#1a1a1a] origin-center transition-transform"
+            />
+            <motion.span
+              animate={isOpen ? { rotate: -45, y: -0 } : { rotate: 0, y: 0 }}
+              className="w-8 h-[2px] bg-[#1a1a1a] origin-center transition-transform"
+            />
+          </button>
+        </div>
+      </motion.header>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-[60] bg-[#111212] p-6 pt-32 flex flex-col"
+          >
+            <div className="flex flex-col space-y-8 text-4xl font-bold uppercase tracking-tighter">
+              {['Services', 'Work', 'About', 'Culture', 'Careers', 'Blog'].map((item, i) => (
+                <motion.a 
+                  key={item} 
+                  href="#"
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + (i * 0.05), duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  className="hover:text-gray-400 transition-colors"
+                >
+                  {item}
+                </motion.a>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+const Hero = React.forwardRef((props, ref) => {
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 1000], [0, 300]);
+  const opacity = useTransform(scrollY, [0, 500], [1, 0]);
+
+  return (
+    <section ref={ref} className="bg-white w-full px-2 pt-2 pb-0 md:px-3 md:pt-3 md:pb-0">
+      <div className="relative min-h-[calc(100vh-3rem)] rounded-3xl md:rounded-[2.5rem] overflow-hidden flex flex-col justify-center items-center w-full pt-20 pb-12">
+        {/* Background Image (Video Placeholder) */}
+        <div className="absolute inset-0 w-full h-full z-0 bg-black">
+          <img 
+            src="https://picsum.photos/1920/1080?random=20" 
+            alt="Hero Background" 
+            className="w-full h-full object-cover opacity-60" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#111212]"></div>
+        </div>
+
+      <motion.div style={{ y, opacity }} className="relative z-10 flex flex-col items-center w-full max-w-7xl px-6 text-center mt-auto mb-auto">
+        {/* Top small text and awards */}
+        <div className="flex flex-col items-center mb-6 space-y-4">
+          <p className="text-white text-[11px] md:text-sm font-bold tracking-[0.2em] uppercase leading-tight">
+            #1 Most Recommended<br/>Content Marketing Agency
+          </p>
+          <div className="flex items-center space-x-2 md:space-x-4 opacity-80">
+            {/* Using text blocks as placeholders for the award logos */}
+            <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">AWARDS</span>
+            <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">THE DRUM</span>
+            <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">GLOBAL SEARCH</span>
+          </div>
+        </div>
+
+        {/* Main Headline */}
+        <h1 className="text-6xl md:text-8xl lg:text-[9.5rem] font-bold tracking-tighter leading-[0.95] text-white flex flex-col items-center justify-center w-full">
+          <span>We Create</span>
+          <span className="flex items-center flex-wrap justify-center gap-2 md:gap-4 lg:gap-6 mt-1 lg:mt-3">
+            Category 
+            <img 
+              src="https://picsum.photos/160/160?random=21" 
+              alt="Leader" 
+              className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 rounded-3xl object-cover" 
+            />
+            Leaders
+          </span>
+        </h1>
+        
+        {/* Subhead */}
+        <p className="text-xl md:text-3xl font-medium tracking-tight text-white mt-6 lg:mt-10 mb-8">
+          on every searchable platform
+        </p>
+      </motion.div>
+
+      {/* Platforms Logos */}
+      <motion.div style={{ opacity }} className="relative z-10 flex flex-wrap justify-center items-center gap-6 md:gap-10 opacity-90 mt-auto pt-10">
+        {['Google', 'ChatGPT', 'Gemini', 'TikTok', 'YouTube', 'Pinterest', 'GIPHY', 'reddit', 'amazon'].map((platform) => (
+          <span key={platform} className="text-white text-sm md:text-lg font-bold tracking-tight">
+            {platform}
+          </span>
+        ))}
+      </motion.div>
+      </div>
+    </section>
+  );
+});
+
+const DemandAndDiscovery = () => {
+  const logos = ['CapitalOne', 'Red Bull', 'JD', 'Kroger', 'HubSpot', 'XBOX', 'CapitalOne', 'Red Bull', 'JD', 'Kroger', 'HubSpot', 'XBOX'];
+  
+  return (
+    <section className="bg-[#EFEEEC] text-[#111212] pt-12 pb-24 md:pb-32 overflow-hidden rounded-t-[2.5rem] md:rounded-t-[4rem] relative z-20">
+      {/* Scrolling Marquee */}
+      <div className="w-full flex overflow-hidden border-b border-gray-300 pb-12 mb-16 md:mb-24">
+        <motion.div 
+          className="flex space-x-16 md:space-x-32 items-center whitespace-nowrap px-8"
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{ repeat: Infinity, ease: "linear", duration: 30 }}
+        >
+          {logos.map((logo, i) => (
+            <span key={i} className="text-2xl md:text-3xl font-bold tracking-tighter opacity-70">
+              {logo}
+            </span>
+          ))}
+        </motion.div>
+      </div>
+
+      <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
+          
+          {/* Left Column */}
+          <div className="lg:col-span-5 flex flex-col justify-between">
+            <Reveal>
+              <div className="text-sm font-bold tracking-wide flex items-center gap-4 mb-24">
+                <span>The agency behind ...</span>
+                <span className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-lg">+</span>
+              </div>
+            </Reveal>
+            
+            <Reveal delay={0.2}>
+              <p className="text-xl md:text-3xl font-semibold tracking-tight leading-snug max-w-lg">
+                A global team of search-first content marketers engineering semantic relevancy & category signals for both the internet and people
+              </p>
+            </Reveal>
+          </div>
+
+          {/* Right Column */}
+          <div className="lg:col-span-7 flex flex-col justify-end">
+            <Reveal delay={0.3}>
+              <h2 className="text-[4rem] md:text-[6rem] lg:text-[7.5rem] font-black tracking-tighter leading-[0.9] mb-12">
+                Driving Demand &<br/>
+                Discovery 
+                <img 
+                  src="https://picsum.photos/80/80?random=30" 
+                  alt="Discovery icon" 
+                  className="inline-block w-16 h-16 md:w-24 md:h-24 rounded-2xl object-cover align-baseline ml-4 border border-gray-300"
+                />
+              </h2>
+            </Reveal>
+            
+            <Reveal delay={0.4} className="flex gap-4">
+              <button className="bg-white px-6 py-3 rounded-full text-[13px] font-bold tracking-wide border border-gray-200 hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm flex items-center gap-2">
+                Our Story <span>↗</span>
+              </button>
+              <button className="bg-transparent px-6 py-3 rounded-full text-[13px] font-bold tracking-wide border border-gray-300 hover:bg-white hover:scale-105 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center gap-2">
+                Our Services <span>↗</span>
+              </button>
+            </Reveal>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const WorkTitle = ({ work, i, total, scrollYProgress }) => {
+  const isLastTwo = work.client === 'Leading E Sim brand globally';
+  const firstPart = isLastTwo ? 'Leading E Sim' : work.client;
+  const secondPart = isLastTwo ? 'brand globally' : '';
+
+  const opacity = useTransform(
+    scrollYProgress,
+    [Math.max(0, (i - 1.5) / total), i / total, Math.min(1, (i + 1.5) / total)],
+    [0.1, 1, 0.1]
+  );
+
+  const scale = useTransform(
+    scrollYProgress,
+    [Math.max(0, (i - 1) / total), i / total, Math.min(1, (i + 1) / total)],
+    [0.9, 1, 0.9]
+  );
+
+  return (
+    <motion.div 
+      style={{ opacity, scale }}
+      className="flex flex-col"
+    >
+      <div className="flex items-start">
+        <h3 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4.5rem] xl:text-[5.5rem] font-bold tracking-tighter leading-[0.9] text-[#EFEEEC]">
+          {firstPart}
+        </h3>
+        {work.year && (
+          <span className="font-mono text-[9px] md:text-[11px] text-[#EFEEEC] ml-2 mt-4 opacity-40">
+            {work.year}
+          </span>
+        )}
+      </div>
+      {secondPart && (
+        <h3 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4.5rem] xl:text-[5.5rem] font-bold tracking-tighter leading-[0.9] text-gray-600">
+          {secondPart}
+        </h3>
+      )}
+    </motion.div>
+  );
+};
+
+const FeaturedWork = React.forwardRef((props, ref) => {
+  const works = [
+    { client: 'SIXT', year: '[2023-2025]', img: 'https://picsum.photos/1000/1200?random=40', tag: 'Car rental' },
+    { client: 'Dojo - B2B', year: '[2021-2025]', img: 'https://picsum.photos/1000/1200?random=41', tag: 'Fintech' },
+    { client: 'Magnet Trade - B2B', year: '[2023-2024]', img: 'https://picsum.photos/1000/1200?random=42', tag: 'B2B Trade' },
+    { client: 'Leading E Sim brand globally', year: '[2023-2025]', img: 'https://picsum.photos/1000/1200?random=43', tag: 'Tech' },
+    { client: 'JD Sports', year: '[2025]', img: 'https://picsum.photos/1000/1200?random=44', tag: 'Retail' },
+    { client: 'Parkdean Resorts', year: '[2019-2025]', img: 'https://picsum.photos/1000/1200?random=45', tag: 'Travel' }
+  ];
+
+  const containerRef = useRef(null);
+
+  // Merge both refs
+  useEffect(() => {
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(containerRef.current);
+      } else {
+        ref.current = containerRef.current;
+      }
+    }
+  }, [ref]);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Sync active index with scroll progress
+  useEffect(() => {
+    return scrollYProgress.on("change", (latest) => {
+      const index = Math.min(
+        works.length - 1,
+        Math.floor(latest * works.length)
+      );
+      if (index !== activeIndex) {
+        setActiveIndex(index);
+      }
+    });
+  }, [activeIndex, works.length, scrollYProgress]);
+
+  // Smoothly animate the right column
+  const yRight = useTransform(scrollYProgress, [0, 1], ["0%", `-${(works.length - 1) * 100 / works.length}%`]);
+  const yLeft = useTransform(scrollYProgress, [0, 1], ["20%", "-20%"]);
+
+  return (
+    <section ref={containerRef} className="bg-white w-full h-[400vh] relative z-20">
+      <div className="sticky top-0 h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-8 overflow-hidden">
+        <div className="bg-[#111212] w-full h-full rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col md:flex-row relative shadow-2xl">
+          
+          {/* Left Side - Information (Smooth Scrolling Titles) */}
+          <div className="w-full md:w-1/2 h-full flex flex-col justify-center px-8 md:px-16 lg:px-20 relative z-20 bg-[#111212]">
+            <div className="absolute top-12 md:top-20 left-8 md:left-16 lg:left-20">
+              <h2 className="text-sm font-bold tracking-[0.2em] uppercase text-[#EFEEEC] opacity-60">Featured Work</h2>
+            </div>
+            
+            <div className="relative h-[60vh] flex flex-col justify-center overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-[#111212] to-transparent z-30" />
+              <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#111212] to-transparent z-30" />
+              
+              <motion.div 
+                style={{ y: yLeft }}
+                className="flex flex-col space-y-4"
+              >
+                {works.map((work, i) => (
+                  <WorkTitle 
+                    key={i} 
+                    work={work} 
+                    i={i} 
+                    total={works.length} 
+                    scrollYProgress={scrollYProgress} 
+                  />
+                ))}
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Right Side - Animated Scrolling Column */}
+          <div className="w-full md:w-1/2 h-full relative overflow-hidden px-4 md:px-8">
+            <motion.div 
+              style={{ y: yRight }}
+              className="flex flex-col gap-8 py-[25vh]"
+            >
+              {works.map((work, i) => (
+                <div key={i} className="featured-work-image w-full flex-shrink-0">
+                  <div className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-900 shadow-xl group cursor-pointer">
+                    <img 
+                      src={work.img} 
+                      alt={work.client} 
+                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" 
+                    />
+                    <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6">
+                      <button className="bg-[#111212]/60 backdrop-blur-md px-4 py-2 md:px-5 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-bold tracking-wide border border-white/20 flex items-center gap-2 hover:bg-white hover:text-black transition-colors duration-300">
+                        <span className="text-lg leading-none mt-[-2px]">⚲</span> {work.tag} <span className="ml-1">↘</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+});
+
+const ServicesAndBanner = () => {
+  return (
+    <section className="bg-[#EFEEEC] text-[#111212] pt-24 pb-32 relative z-30 rounded-t-[2.5rem] md:rounded-t-[4rem]">
+      <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
+          <Reveal>
+            <h2 className="text-6xl md:text-[5.5rem] lg:text-[7.5rem] font-bold tracking-tighter leading-none flex items-center gap-4">
+              Our 
+              <img src="https://picsum.photos/120/120?random=50" className="w-16 h-16 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-3xl object-cover -mt-2" alt="Services" />
+              Services
+            </h2>
+          </Reveal>
+          <Reveal delay={0.2} className="mt-8 md:mt-0">
+            <button className="bg-white px-6 py-3 rounded-full text-[13px] font-bold tracking-wide border border-gray-200 hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm flex items-center gap-2">
+              View All Services <span>↗</span>
+            </button>
+          </Reveal>
+        </div>
+
+        <div className="border-t border-gray-300 pt-12 pb-12 md:pb-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
+            <div className="flex flex-col">
+              <Reveal delay={0.1}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8 border-b border-gray-300">Digital PR</div></Reveal>
+              <Reveal delay={0.2}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8 border-b border-gray-300">Search & Growth Strategy</div></Reveal>
+              <Reveal delay={0.3}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8">Data & Insights</div></Reveal>
+            </div>
+            <div className="flex flex-col">
+              <Reveal delay={0.15}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8 border-b border-gray-300 md:border-b border-gray-300">Organic Social & Content</div></Reveal>
+              <Reveal delay={0.25}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8 border-b border-gray-300 md:border-b border-gray-300">Content Experience</div></Reveal>
+              <Reveal delay={0.35}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8">Onsite SEO</div></Reveal>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Marquee Banner */}
+      <div className="w-full overflow-hidden flex pt-8 md:pt-12">
+        <motion.div 
+          className="flex whitespace-nowrap items-center"
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{ repeat: Infinity, ease: "linear", duration: 25 }}
+        >
+          {/* We repeat the phrase to ensure seamless scrolling */}
+          {[1, 2].map((i) => (
+            <div key={i} className="flex items-center">
+              <h2 className="text-[7rem] md:text-[12rem] lg:text-[15rem] font-bold tracking-tighter leading-none pr-8 flex items-center gap-4 md:gap-8">
+                Chasing Consumers Not Algorithms
+                <img src="https://picsum.photos/240/240?random=51" className="w-20 h-20 md:w-32 md:h-32 lg:w-48 lg:h-48 rounded-3xl object-cover border border-gray-300" alt="Banner image" />
+              </h2>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+const LegacyInTheMaking = React.forwardRef((props, ref) => {
+  const containerRef = useRef(null);
+
+  // Merge both refs
+  useEffect(() => {
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(containerRef.current);
+      } else {
+        ref.current = containerRef.current;
+      }
+    }
+  }, [ref]);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  const legacyCards = [
+    {
+      id: 'pioneers',
+      title: 'Pioneers',
+      text1: "We're dedicated to creating the industry narrative that others follow 3 years from now. We paved the path for creative SEO, multi-channel search with Digital PR, and Social Search and we will continue to do it.",
+      text2: "We're on a mission to be the first search-first agency to win a Cannes Lion disrupting the status quo.",
+      img: 'https://picsum.photos/400/400?random=80',
+      bgColor: 'bg-black text-[#EFEEEC]',
+      rotate: -3,
+      index: 0
+    },
+    {
+      id: 'award-winning',
+      title: 'Award Winning',
+      text1: "A roll top bath full of 79 awards. Voted The Drum's best agency outside of London. We are official judges for industry awards including Global Search Awards and Global Content Marketing Awards.",
+      img: 'https://picsum.photos/400/400?random=81',
+      bgColor: 'bg-[#A7F3D0] text-[#111212]',
+      rotate: 4,
+      index: 1
+    },
+    {
+      id: 'speed',
+      title: 'Speed',
+      text1: "People ask us why we are called Rise at Seven? Ever heard the saying Early Bird catches the worm? Google is moving fast, but humans are moving faster. We chase consumers, not algorithms. We've created a service which takes ideas to result within 60 minutes.",
+      img: 'https://picsum.photos/400/400?random=82',
+      bgColor: 'bg-white text-[#111212]',
+      rotate: -2,
+      index: 2
+    }
+  ];
+
+  const y0 = useTransform(scrollYProgress, [0, 0.33], ["0vh", "-150vh"]);
+  const y1 = useTransform(scrollYProgress, [0.33, 0.66], ["0vh", "-150vh"]);
+  
+  const transforms = [y0, y1, null];
+
+  return (
+    <section ref={containerRef} className="relative h-[300vh] bg-[#EFEEEC] w-full z-10 pb-32">
+      <div className="sticky top-0 h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
+        <h2 className="absolute top-16 md:top-24 text-xl md:text-2xl font-bold tracking-tight text-center z-50 text-[#111212]">
+          Legacy In The Making
+        </h2>
+
+        <div className="relative w-[90%] md:w-full max-w-[550px] aspect-[4/5] md:aspect-square flex justify-center items-center mt-10">
+          {[...legacyCards].reverse().map((card, idx) => {
+            const realIndex = 2 - idx;
+            const y = transforms[realIndex];
+
+            return (
+              <motion.div
+                key={card.id}
+                style={{ y: y || 0, rotate: card.rotate }}
+                className={`absolute inset-0 flex flex-col items-center justify-center p-8 md:p-12 rounded-[2.5rem] md:rounded-[3rem] shadow-2xl ${card.bgColor}`}
+              >
+                <img src={card.img} alt={card.title} className="w-28 h-28 md:w-44 md:h-44 rounded-2xl md:rounded-[2rem] object-cover mb-6 md:mb-10" />
+                <h3 className="text-4xl md:text-[4.5rem] font-bold tracking-tighter mb-4 md:mb-6 leading-none">{card.title}</h3>
+                <p className="text-center text-[13px] md:text-[15px] leading-[1.6] font-medium mb-3 max-w-[340px]">
+                  {card.text1}
+                </p>
+                {card.text2 && (
+                  <p className="text-center text-[13px] md:text-[15px] leading-[1.6] font-medium max-w-[340px]">
+                    {card.text2}
+                  </p>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+});
+
+const WhatsNew = () => {
+  const posts = [
+    {
+      category: "News",
+      title: "Ryan McNamara Is Now Rise at Seven's Global Operations Director",
+      author: "Carrie Rose",
+      time: "2 mins",
+      img: "https://picsum.photos/800/800?random=100",
+      avatar: "https://i.pravatar.cc/100?u=carrie"
+    },
+    {
+      category: "Food/Hospitality/Drink",
+      title: "Rise at Seven Appointed by Coneys to Drive Demand and Retail Growth for them in the Chocolate Confectionery Category",
+      author: "Ray Saddiq",
+      time: "2 mins",
+      img: "https://picsum.photos/800/800?random=101",
+      avatar: "https://i.pravatar.cc/100?u=ray"
+    },
+    {
+      category: "Food/Hospitality/Drink",
+      title: "Rise at Seven Appointed by Langtins to drive demand and retail growth for Noomz",
+      author: "Carrie Rose",
+      time: "2 mins",
+      img: "https://picsum.photos/800/800?random=102",
+      avatar: "https://i.pravatar.cc/100?u=carrie2",
+      hasSearch: true,
+      hasBottomText: true
+    }
+  ];
+
+  return (
+    <section className="bg-white text-[#111212] py-24 md:py-32 px-6 md:px-12 w-full overflow-hidden">
+      <div className="max-w-screen-2xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16">
+          <Reveal>
+            <h2 className="text-7xl md:text-8xl lg:text-[10rem] font-bold tracking-tighter flex items-center gap-4">
+              What's 
+              <div className="w-16 h-12 md:w-24 md:h-16 lg:w-32 lg:h-20 bg-gray-900 rounded-2xl overflow-hidden mt-2 relative">
+                <img src="https://picsum.photos/200/150?random=103" alt="New" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1"></div>
+                </div>
+              </div>
+              New
+            </h2>
+          </Reveal>
+          <Reveal delay={0.2} className="mt-8 md:mt-0">
+            <button className="bg-white px-8 py-4 rounded-full text-[13px] font-bold tracking-wide border border-gray-200 hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm flex items-center gap-2">
+              Explore More Thoughts <span className="text-lg">↗</span>
+            </button>
+          </Reveal>
+        </div>
+
+        {/* Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
+          {posts.map((post, i) => (
+            <Reveal key={i} delay={0.1 * (i + 1)}>
+              <div className="flex flex-col group cursor-pointer">
+                {/* Image Container */}
+                <div className="relative w-full aspect-square rounded-[2rem] md:rounded-[3rem] overflow-hidden bg-gray-100 mb-8">
+                  <img 
+                    src={post.img} 
+                    alt={post.title} 
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]" 
+                  />
+                  
+                  {/* Category Tag */}
+                  <div className="absolute top-6 left-6">
+                    <span className="bg-[#111212]/20 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wide border border-white/20">
+                      {post.category}
+                    </span>
+                  </div>
+
+                  {/* Corner icon for 2nd post like in image */}
+                  {i === 1 && (
+                    <div className="absolute bottom-8 right-8 w-8 h-8 flex items-center justify-center text-white text-xl opacity-80">
+                      ↘
+                    </div>
+                  )}
+
+                  {/* Search Overlay for 3rd post */}
+                  {post.hasSearch && (
+                    <div className="absolute inset-0 flex items-center justify-center p-6">
+                      <div className="bg-white/90 backdrop-blur-md px-6 py-3 rounded-full flex items-center gap-3 shadow-lg transform translate-y-4">
+                        <span className="text-gray-400 text-lg">⚲</span>
+                        <span className="text-[13px] font-bold tracking-tight text-[#111212]">Freeze Dried Sweets</span>
+                        <span className="text-gray-400 text-sm">↗</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bottom text for 3rd post */}
+                  {post.hasBottomText && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-[11px] font-bold tracking-widest whitespace-nowrap">
+                      Rise at Seven
+                    </div>
+                  )}
+                </div>
+
+                {/* Metadata */}
+                <div className="flex items-center gap-3 mb-4 px-2">
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-gray-200">
+                    <img src={post.avatar} alt={post.author} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] font-bold text-[#111212]">{post.author}</span>
+                    <span className="text-[12px] text-gray-400 font-medium">⏱ {post.time}</span>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className="text-2xl md:text-[1.85rem] font-bold tracking-tight leading-[1.2] text-[#111212] group-hover:text-gray-600 transition-colors duration-300 px-2">
+                  {post.title}
+                </h3>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const Footer = () => {
+  const { scrollYProgress } = useScroll();
+  const y = useTransform(scrollYProgress, [0.9, 1], [100, 0]);
+
+  return (
+    <footer className="bg-[#111212] pt-32 pb-16 px-6 md:px-12 border-t border-gray-800/50 relative overflow-hidden">
+      <motion.div style={{ y }} className="max-w-screen-2xl mx-auto flex flex-col relative z-10">
+        
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-16 mb-32">
+          <div className="md:col-span-6 space-y-12">
+            <h2 className="text-6xl md:text-[6rem] lg:text-[7.5rem] font-bold uppercase tracking-tighter leading-[0.9] max-w-2xl text-white">
+              Stay<br/>Updated<br/>With Rise<br/>News
+            </h2>
+            <button className="bg-white text-[#111212] px-10 py-4 rounded-full text-xs font-black uppercase tracking-widest hover:scale-105 transition-all duration-300 shadow-xl">
+              Subscribe
+            </button>
+          </div>
+          
+          <div className="md:col-span-3 pt-4">
+            <div className="flex flex-col space-y-4">
+              {['Services', 'Work', 'About', 'Culture', 'Meet The Risers', 'Testimonials', 'Blog', 'Careers'].map(link => (
+                <a key={link} href="#" className="text-[13px] font-black uppercase tracking-widest text-white hover:text-gray-400 transition-colors duration-300">
+                  {link}
+                </a>
+              ))}
+            </div>
+          </div>
+          
+          <div className="md:col-span-3 pt-4">
+            <div className="flex flex-col space-y-4">
+              {['Sheffield', 'Manchester', 'London', 'New York', 'Contact'].map(link => (
+                <a key={link} href="#" className="text-[13px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-colors duration-300">
+                  {link}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        <div className="pt-12 border-t border-gray-800/50 flex flex-col md:flex-row justify-between items-start md:items-center space-y-6 md:space-y-0">
+          <div className="flex gap-8">
+            <a href="#" className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#" className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors">Terms & Conditions</a>
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600">
+            © 2025 Rise at Seven
+          </p>
+        </div>
+      </motion.div>
+    </footer>
+  );
+};
+
+const Char = ({ char, index, scrollYProgress }) => {
+  // Perfectly tuned to trigger when the character is at ~90vw on the screen (further right).
+  const sEnter = 0.05 + (index * 0.022);
+  const sPeak = sEnter + 0.04;
+  const sSettle = sEnter + 0.09;
+
+  const y = useTransform(
+    scrollYProgress,
+    [sEnter, sPeak, sSettle],
+    [300, -150, 0]
+  );
+
+  const rotate = useTransform(
+    scrollYProgress,
+    [sEnter, sPeak, sSettle],
+    [35, -15, 0]
+  );
+
+  const opacity = useTransform(
+    scrollYProgress,
+    [sEnter, sEnter + 0.03],
+    [0, 1]
+  );
+
+  return (
+    <motion.span
+      style={{ y, rotate, opacity }}
+      className="text-[6rem] md:text-[10rem] lg:text-[14rem] font-bold tracking-tighter leading-none text-[#111212] inline-block origin-center"
+    >
+      {char === " " ? "\u00A0" : char}
+    </motion.span>
+  );
+};
+
+const ScrollingText = () => {
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  });
+
+  const x = useTransform(scrollYProgress, [0, 1], ["100vw", "-100%"]);
+  const text = "Ready to Rise at Seven?";
+
+  return (
+    <section ref={containerRef} className="h-screen w-full overflow-hidden bg-white flex items-center">
+      <motion.div style={{ x }} className="whitespace-nowrap flex">
+        {text.split("").map((char, i) => (
+          <Char 
+            key={i} 
+            char={char} 
+            index={i} 
+            scrollYProgress={scrollYProgress} 
+          />
+        ))}
+      </motion.div>
+    </section>
+  );
+};
+
+function App() {
+  const heroRef = useRef(null);
+  const featuredWorkRef = useRef(null);
+  const legacyRef = useRef(null);
+
+  return (
+    <div className="min-h-screen bg-white text-[#111212] font-sans selection:bg-[#111212] selection:text-[#EFEEEC]">
+      <Header heroRef={heroRef} featuredWorkRef={featuredWorkRef} legacyRef={legacyRef} />
+      <main>
+        <Hero ref={heroRef} />
+        <DemandAndDiscovery />
+        <FeaturedWork ref={featuredWorkRef} />
+        <ServicesAndBanner />
+        <LegacyInTheMaking ref={legacyRef} />
+        <WhatsNew />
+        <ScrollingText />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+export default App;
