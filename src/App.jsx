@@ -431,7 +431,16 @@ const FeaturedWork = React.forwardRef((props, ref) => {
     });
   }, [activeIndex, works.length, scrollYProgress]);
 
-  // Smoothly animate the right column
+  const mouseX = useSpring(0, { stiffness: 500, damping: 30 });
+  const mouseY = useSpring(0, { stiffness: 500, damping: 30 });
+  const [isHovering, setIsHovering] = useState(null);
+
+  const handleMouseMove = (e, i) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseX.set(e.clientX - rect.left);
+    mouseY.set(e.clientY - rect.top);
+  };
+
   const yRight = useTransform(scrollYProgress, [0, 1], ["0%", `-${(works.length - 1) * 100 / works.length}%`]);
   const yLeft = useTransform(scrollYProgress, [0, 1], ["20%", "-20%"]);
 
@@ -439,28 +448,28 @@ const FeaturedWork = React.forwardRef((props, ref) => {
     <section ref={containerRef} className="bg-white w-full h-[400vh] relative z-20">
       <div className="sticky top-0 h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-8 overflow-hidden">
         <div className="bg-[#111212] w-full h-full rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col md:flex-row relative shadow-2xl">
-
+          
           {/* Left Side - Information (Smooth Scrolling Titles) */}
           <div className="w-full md:w-1/2 h-full flex flex-col justify-center px-8 md:px-16 lg:px-20 relative z-20 bg-[#111212]">
             <div className="absolute top-12 md:top-20 left-8 md:left-16 lg:left-20">
               <h2 className="text-sm font-bold tracking-[0.2em] uppercase text-[#EFEEEC] opacity-60">Featured Work</h2>
             </div>
-
+            
             <div className="relative h-[60vh] flex flex-col justify-center overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-[#111212] to-transparent z-30" />
               <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#111212] to-transparent z-30" />
-
-              <motion.div
+              
+              <motion.div 
                 style={{ y: yLeft }}
                 className="flex flex-col space-y-4"
               >
                 {works.map((work, i) => (
-                  <WorkTitle
-                    key={i}
-                    work={work}
-                    i={i}
-                    total={works.length}
-                    scrollYProgress={scrollYProgress}
+                  <WorkTitle 
+                    key={i} 
+                    work={work} 
+                    i={i} 
+                    total={works.length} 
+                    scrollYProgress={scrollYProgress} 
                   />
                 ))}
               </motion.div>
@@ -469,19 +478,72 @@ const FeaturedWork = React.forwardRef((props, ref) => {
 
           {/* Right Side - Animated Scrolling Column */}
           <div className="w-full md:w-1/2 h-full relative overflow-hidden px-4 md:px-8">
-            <motion.div
+            <motion.div 
               style={{ y: yRight }}
               className="flex flex-col gap-8 py-[25vh]"
             >
               {works.map((work, i) => (
                 <div key={i} className="featured-work-image w-full flex-shrink-0">
-                  <div className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-900 shadow-xl group cursor-pointer">
-                    <img
-                      src={work.img}
-                      alt={work.client}
-                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+                  <div 
+                    className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-900 shadow-xl group cursor-none"
+                    onMouseEnter={() => setIsHovering(i)}
+                    onMouseLeave={() => setIsHovering(null)}
+                    onMouseMove={(e) => handleMouseMove(e, i)}
+                  >
+                    {/* Main Image */}
+                    <img 
+                      src={work.img} 
+                      alt={work.client} 
+                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" 
                     />
-                    <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6">
+                    
+                    {/* Hover Overlay */}
+                    <div className={cn(
+                      "absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out flex flex-col justify-between p-8 md:p-12 z-10",
+                      i % 2 === 0 ? "bg-[#fbd2d7]" : "bg-[#bde6ff]"
+                    )}>
+                      {/* Top text on hover */}
+                      <div className="transform -translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                        <h4 className="text-black text-2xl md:text-4xl font-bold leading-tight tracking-tight max-w-[80%]">
+                          {i === 0 ? "Building the UK's leading beauty dupe brand" : 
+                           i === 1 ? "Revolutionizing the way the world pays" : 
+                           i === 2 ? "Driving demand in the B2B trade sector" :
+                           i === 3 ? "Scaling global reach for tech pioneers" :
+                           i === 4 ? "Redefining retail excellence at scale" : 
+                           "Crafting unforgettable travel experiences"}
+                        </h4>
+                      </div>
+
+                      {/* Custom Follower Cursor */}
+                      <motion.div 
+                        className="pointer-events-none absolute z-50 flex items-center justify-center"
+                        style={{
+                          left: mouseX,
+                          top: mouseY,
+                          translateX: "-50%",
+                          translateY: "-50%"
+                        }}
+                      >
+                        <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-[#A3F1D1] flex items-center justify-center text-black shadow-2xl">
+                          <span className="text-2xl md:text-3xl font-bold">↗</span>
+                        </div>
+                      </motion.div>
+
+                      {/* Bottom row on hover */}
+                      <div className="flex justify-between items-end transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-150">
+                        <div className="text-black font-black uppercase tracking-tighter text-xs md:text-sm">
+                          {work.client}
+                        </div>
+                        <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 shadow-sm">
+                          <span className="text-gray-400 text-sm">⚲</span>
+                          <span className="text-[11px] md:text-xs font-bold text-black uppercase tracking-wider">{work.tag}</span>
+                          <span className="text-gray-400 text-xs">↗</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Default Tag */}
+                    <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 group-hover:opacity-0 transition-opacity duration-300">
                       <button className="bg-[#111212]/60 backdrop-blur-md px-4 py-2 md:px-5 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-bold tracking-wide border border-white/20 flex items-center gap-2 hover:bg-white hover:text-black transition-colors duration-300">
                         <span className="text-lg leading-none mt-[-2px]">⚲</span> {work.tag} <span className="ml-1">↘</span>
                       </button>
@@ -497,6 +559,49 @@ const FeaturedWork = React.forwardRef((props, ref) => {
   );
 });
 
+const ServiceItem = ({ title, delay }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  // Using title length and characters to ensure consistent "random" images per service
+  const randomId = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const randomImg = `https://picsum.photos/1000/300?random=${randomId}`;
+
+  return (
+    <Reveal delay={delay}>
+      <div 
+        className="relative py-4 md:py-6 border-b border-gray-300 group cursor-pointer transition-all duration-500"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Default Text (Visible when NOT hovered) */}
+        <div className={cn(
+          "text-3xl md:text-4xl lg:text-[3.2rem] font-bold tracking-tight transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          isHovered ? "opacity-0 translate-x-10" : "opacity-100 translate-x-0"
+        )}>
+          {title}
+        </div>
+
+        {/* Hover Pill Shape (Visible only on HOVER) */}
+        <div className={cn(
+          "absolute inset-0 z-10 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center px-4 md:px-8",
+          isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"
+        )}>
+          {/* Background Container with Image */}
+          <div className="absolute inset-y-1.5 md:inset-y-2 left-0 right-0 rounded-full overflow-hidden shadow-lg transform scale-y-[0.9] group-hover:scale-y-100 transition-transform duration-500">
+             <img src={randomImg} className="w-full h-full object-cover" alt="" />
+             <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          </div>
+          
+          {/* Arrow and Text */}
+          <div className="relative z-20 flex items-center gap-6 text-white ml-2">
+            <span className="text-4xl md:text-5xl lg:text-[4rem] font-light leading-none transform group-hover:rotate-0 -rotate-12 transition-transform duration-500">↗</span>
+            <span className="text-3xl md:text-4xl lg:text-[3.2rem] font-bold tracking-tighter">{title}</span>
+          </div>
+        </div>
+      </div>
+    </Reveal>
+  );
+};
+
 const ServicesAndBanner = () => {
   return (
     <section className="bg-[#EFEEEC] text-[#111212] pt-24 pb-32 relative z-30 rounded-t-[2.5rem] md:rounded-t-[4rem]">
@@ -504,7 +609,7 @@ const ServicesAndBanner = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
           <Reveal>
             <h2 className="text-6xl md:text-[5.5rem] lg:text-[7.5rem] font-bold tracking-tighter leading-none flex items-center gap-4">
-              Our
+              Our 
               <img src="https://picsum.photos/120/120?random=50" className="w-16 h-16 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-3xl object-cover -mt-2" alt="Services" />
               Services
             </h2>
@@ -516,17 +621,17 @@ const ServicesAndBanner = () => {
           </Reveal>
         </div>
 
-        <div className="border-t border-gray-300 pt-12 pb-12 md:pb-24">
+        <div className="border-t border-gray-300 pt-8 pb-12 md:pb-24">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
             <div className="flex flex-col">
-              <Reveal delay={0.1}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8 border-b border-gray-300">Digital PR</div></Reveal>
-              <Reveal delay={0.2}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8 border-b border-gray-300">Search & Growth Strategy</div></Reveal>
-              <Reveal delay={0.3}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8">Data & Insights</div></Reveal>
+              <ServiceItem title="Digital PR" delay={0.1} />
+              <ServiceItem title="Search & Growth Strategy" delay={0.2} />
+              <ServiceItem title="Data & Insights" delay={0.3} />
             </div>
             <div className="flex flex-col">
-              <Reveal delay={0.15}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8 border-b border-gray-300 md:border-b border-gray-300">Organic Social & Content</div></Reveal>
-              <Reveal delay={0.25}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8 border-b border-gray-300 md:border-b border-gray-300">Content Experience</div></Reveal>
-              <Reveal delay={0.35}><div className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold tracking-tight py-6 md:py-8">Onsite SEO</div></Reveal>
+              <ServiceItem title="Organic Social & Content" delay={0.15} />
+              <ServiceItem title="Content Experience" delay={0.25} />
+              <ServiceItem title="Onsite SEO" delay={0.35} />
             </div>
           </div>
         </div>
@@ -632,7 +737,7 @@ const LegacyInTheMaking = React.forwardRef((props, ref) => {
                 <p className="text-center text-[13px] md:text-[15px] leading-[1.6] font-medium mb-3 max-w-[340px]">
                   {card.text1}
                 </p>
-                {card.text2 && (
+                  {card.text2 && (
                   <p className="text-center text-[13px] md:text-[15px] leading-[1.6] font-medium max-w-[340px]">
                     {card.text2}
                   </p>
@@ -646,6 +751,84 @@ const LegacyInTheMaking = React.forwardRef((props, ref) => {
   );
 });
 
+const NewsCard = ({ post, i }) => {
+  const mouseX = useSpring(0, { stiffness: 500, damping: 30 });
+  const mouseY = useSpring(0, { stiffness: 500, damping: 30 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseX.set(e.clientX - rect.left);
+    mouseY.set(e.clientY - rect.top);
+  };
+
+  return (
+    <Reveal delay={0.1 * (i + 1)}>
+      <div 
+        className="flex flex-col group cursor-none"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onMouseMove={handleMouseMove}
+      >
+        <div className="relative w-full aspect-square rounded-[2rem] md:rounded-[3rem] overflow-hidden bg-gray-100 mb-8">
+          <img
+            src={post.img}
+            alt={post.title}
+            className={cn(
+              "absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]",
+              isHovered ? "blur-2xl scale-110 opacity-80" : "blur-0 scale-100 opacity-100"
+            )}
+          />
+
+          <motion.div 
+            className="pointer-events-none absolute z-50 flex items-center justify-center"
+            style={{
+              left: mouseX,
+              top: mouseY,
+              translateX: "-50%",
+              translateY: "-50%",
+              opacity: isHovered ? 1 : 0,
+              scale: isHovered ? 1 : 0.5
+            }}
+          >
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-[#A3F1D1] flex items-center justify-center text-black shadow-2xl">
+              <span className="text-2xl md:text-3xl font-bold">↗</span>
+            </div>
+          </motion.div>
+
+          <div className="absolute top-6 left-6 z-20">
+            <span className="bg-[#111212]/20 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wide border border-white/20">
+              {post.category}
+            </span>
+          </div>
+
+          {i === 1 && (
+            <div className="absolute bottom-8 right-8 w-8 h-8 flex items-center justify-center text-white text-xl opacity-80 z-20">
+              ↘
+            </div>
+          )}
+        </div>
+
+        <div className="px-2">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full">
+              <img src={post.avatar} className="w-5 h-5 rounded-full border border-white" alt={post.author} />
+              <span className="text-[11px] font-bold text-gray-600">{post.author}</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full text-gray-500">
+              <span className="text-[11px]">⏱</span>
+              <span className="text-[11px] font-bold">{post.time}</span>
+            </div>
+          </div>
+          <h3 className="text-2xl md:text-2xl lg:text-3xl font-bold tracking-tight leading-tight group-hover:text-gray-600 transition-colors duration-300">
+            {post.title}
+          </h3>
+        </div>
+      </div>
+    </Reveal>
+  );
+};
+
 const WhatsNew = () => {
   const posts = [
     {
@@ -658,7 +841,7 @@ const WhatsNew = () => {
     },
     {
       category: "Food/Hospitality/Drink",
-      title: "Rise at Seven Appointed by Coneys to Drive Demand and Retail Growth for them in the Chocolate Confectionery Category",
+      title: "Rise at Seven Exits Sheffield and Triples Manchester as new HQ as they go for global expansion",
       author: "Ray Saddiq",
       time: "2 mins",
       img: "https://picsum.photos/800/800?random=101",
@@ -670,9 +853,7 @@ const WhatsNew = () => {
       author: "Carrie Rose",
       time: "2 mins",
       img: "https://picsum.photos/800/800?random=102",
-      avatar: "https://i.pravatar.cc/100?u=carrie2",
-      hasSearch: true,
-      hasBottomText: true
+      avatar: "https://i.pravatar.cc/100?u=carrie2"
     }
   ];
 
@@ -703,66 +884,7 @@ const WhatsNew = () => {
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
           {posts.map((post, i) => (
-            <Reveal key={i} delay={0.1 * (i + 1)}>
-              <div className="flex flex-col group cursor-pointer">
-                {/* Image Container */}
-                <div className="relative w-full aspect-square rounded-[2rem] md:rounded-[3rem] overflow-hidden bg-gray-100 mb-8">
-                  <img
-                    src={post.img}
-                    alt={post.title}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                  />
-
-                  {/* Category Tag */}
-                  <div className="absolute top-6 left-6">
-                    <span className="bg-[#111212]/20 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wide border border-white/20">
-                      {post.category}
-                    </span>
-                  </div>
-
-                  {/* Corner icon for 2nd post like in image */}
-                  {i === 1 && (
-                    <div className="absolute bottom-8 right-8 w-8 h-8 flex items-center justify-center text-white text-xl opacity-80">
-                      ↘
-                    </div>
-                  )}
-
-                  {/* Search Overlay for 3rd post */}
-                  {post.hasSearch && (
-                    <div className="absolute inset-0 flex items-center justify-center p-6">
-                      <div className="bg-white/90 backdrop-blur-md px-6 py-3 rounded-full flex items-center gap-3 shadow-lg transform translate-y-4">
-                        <span className="text-gray-400 text-lg">⚲</span>
-                        <span className="text-[13px] font-bold tracking-tight text-[#111212]">Freeze Dried Sweets</span>
-                        <span className="text-gray-400 text-sm">↗</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Bottom text for 3rd post */}
-                  {post.hasBottomText && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-[11px] font-bold tracking-widest whitespace-nowrap">
-                      Rise at Seven
-                    </div>
-                  )}
-                </div>
-
-                {/* Metadata */}
-                <div className="flex items-center gap-3 mb-4 px-2">
-                  <div className="w-7 h-7 rounded-full overflow-hidden bg-gray-200">
-                    <img src={post.avatar} alt={post.author} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-bold text-[#111212]">{post.author}</span>
-                    <span className="text-[12px] text-gray-400 font-medium">⏱ {post.time}</span>
-                  </div>
-                </div>
-
-                {/* Title */}
-                <h3 className="text-2xl md:text-[1.85rem] font-bold tracking-tight leading-[1.2] text-[#111212] group-hover:text-gray-600 transition-colors duration-300 px-2">
-                  {post.title}
-                </h3>
-              </div>
-            </Reveal>
+            <NewsCard key={i} post={post} i={i} />
           ))}
         </div>
       </div>
