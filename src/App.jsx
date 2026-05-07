@@ -82,10 +82,10 @@ const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
 
       <AnimatePresence>
         {hoveredNav && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-[45] bg-black/10 backdrop-blur-md"
           />
@@ -110,7 +110,7 @@ const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
         {/* Desktop Nav */}
         <nav className="hidden xl:flex items-center space-x-2 text-[13px] font-bold tracking-wide text-[#1a1a1a]">
           {['Services +', 'Industries +', 'International +', 'About +'].map((item) => (
-            <div 
+            <div
               key={item}
               className="relative"
               onMouseEnter={() => setHoveredNav(item)}
@@ -125,7 +125,7 @@ const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
               >
                 {item}
               </a>
-              
+
               <AnimatePresence>
                 {hoveredNav === item && (
                   <motion.div
@@ -137,9 +137,9 @@ const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
                   >
                     <div className="w-1/2 p-4 flex items-center justify-center text-center">
                       <h3 className="text-xl font-bold tracking-tight text-[#111212] leading-tight">
-                        {item === 'Services +' ? 'B2B Marketing' : 
-                         item === 'Industries +' ? 'Retail & eCommerce' : 
-                         item === 'International +' ? 'Global Reach' : 'Our Story'}
+                        {item === 'Services +' ? 'B2B Marketing' :
+                          item === 'Industries +' ? 'Retail & eCommerce' :
+                            item === 'International +' ? 'Global Reach' : 'Our Story'}
                       </h3>
                     </div>
                     <div className="w-1/2 rounded-xl overflow-hidden bg-gray-100 aspect-square relative">
@@ -164,7 +164,7 @@ const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
           <button className="hidden md:flex items-center gap-1.5 bg-[#1a1a1a] text-white px-6 py-2.5 rounded-full text-[13px] font-bold tracking-tight hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
             Get In Touch <span>↗</span>
           </button>
-          
+
           {/* Hamburger */}
           <button
             className="xl:hidden w-10 h-10 flex flex-col justify-center items-center space-y-1.5 relative z-[65]"
@@ -185,7 +185,7 @@ const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div 
+          <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -194,8 +194,8 @@ const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
           >
             <div className="flex flex-col space-y-8 text-4xl font-bold uppercase tracking-tighter">
               {['Services', 'Work', 'About', 'Culture', 'Careers', 'Blog'].map((item, i) => (
-                <motion.a 
-                  key={item} 
+                <motion.a
+                  key={item}
                   href="#"
                   initial={{ opacity: 0, x: 50 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -223,56 +223,56 @@ const Hero = React.forwardRef((props, ref) => {
       <div className="relative min-h-[calc(100vh-3rem)] rounded-3xl md:rounded-[2.5rem] overflow-hidden flex flex-col justify-center items-center w-full pt-20 pb-12">
         {/* Background Image (Video Placeholder) */}
         <div className="absolute inset-0 w-full h-full z-0 bg-black">
-          <img 
-            src="https://picsum.photos/1920/1080?random=20" 
-            alt="Hero Background" 
-            className="w-full h-full object-cover opacity-60" 
+          <img
+            src="https://picsum.photos/1920/1080?random=20"
+            alt="Hero Background"
+            className="w-full h-full object-cover opacity-60"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#111212]"></div>
         </div>
 
-      <motion.div style={{ y, opacity }} className="relative z-10 flex flex-col items-center w-full max-w-7xl px-6 text-center mt-auto mb-auto">
-        {/* Top small text and awards */}
-        <div className="flex flex-col items-center mb-6 space-y-4">
-          <p className="text-white text-[11px] md:text-sm font-bold tracking-[0.2em] uppercase leading-tight">
-            #1 Most Recommended<br/>Content Marketing Agency
-          </p>
-          <div className="flex items-center space-x-2 md:space-x-4 opacity-80">
-            {/* Using text blocks as placeholders for the award logos */}
-            <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">AWARDS</span>
-            <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">THE DRUM</span>
-            <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">GLOBAL SEARCH</span>
+        <motion.div style={{ y, opacity }} className="relative z-10 flex flex-col items-center w-full max-w-7xl px-6 text-center mt-auto mb-auto">
+          {/* Top small text and awards */}
+          <div className="flex flex-col items-center mb-6 space-y-4">
+            <p className="text-white text-[11px] md:text-sm font-bold tracking-[0.2em] uppercase leading-tight">
+              #1 Most Recommended<br />Content Marketing Agency
+            </p>
+            <div className="flex items-center space-x-2 md:space-x-4 opacity-80">
+              {/* Using text blocks as placeholders for the award logos */}
+              <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">AWARDS</span>
+              <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">THE DRUM</span>
+              <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">GLOBAL SEARCH</span>
+            </div>
           </div>
-        </div>
 
-        {/* Main Headline */}
-        <h1 className="text-6xl md:text-8xl lg:text-[9.5rem] font-bold tracking-tighter leading-[0.95] text-white flex flex-col items-center justify-center w-full">
-          <span>We Create</span>
-          <span className="flex items-center flex-wrap justify-center gap-2 md:gap-4 lg:gap-6 mt-1 lg:mt-3">
-            Category 
-            <img 
-              src="https://picsum.photos/160/160?random=21" 
-              alt="Leader" 
-              className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 rounded-3xl object-cover" 
-            />
-            Leaders
-          </span>
-        </h1>
-        
-        {/* Subhead */}
-        <p className="text-xl md:text-3xl font-medium tracking-tight text-white mt-6 lg:mt-10 mb-8">
-          on every searchable platform
-        </p>
-      </motion.div>
+          {/* Main Headline */}
+          <h1 className="text-6xl md:text-8xl lg:text-[9.5rem] font-bold tracking-tighter leading-[0.95] text-white flex flex-col items-center justify-center w-full">
+            <span>We Create</span>
+            <span className="flex items-center flex-wrap justify-center gap-2 md:gap-4 lg:gap-6 mt-1 lg:mt-3">
+              Category
+              <img
+                src="https://picsum.photos/160/160?random=21"
+                alt="Leader"
+                className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 rounded-3xl object-cover"
+              />
+              Leaders
+            </span>
+          </h1>
 
-      {/* Platforms Logos */}
-      <motion.div style={{ opacity }} className="relative z-10 flex flex-wrap justify-center items-center gap-6 md:gap-10 opacity-90 mt-auto pt-10">
-        {['Google', 'ChatGPT', 'Gemini', 'TikTok', 'YouTube', 'Pinterest', 'GIPHY', 'reddit', 'amazon'].map((platform) => (
-          <span key={platform} className="text-white text-sm md:text-lg font-bold tracking-tight">
-            {platform}
-          </span>
-        ))}
-      </motion.div>
+          {/* Subhead */}
+          <p className="text-xl md:text-3xl font-medium tracking-tight text-white mt-6 lg:mt-10 mb-8">
+            on every searchable platform
+          </p>
+        </motion.div>
+
+        {/* Platforms Logos */}
+        <motion.div style={{ opacity }} className="relative z-10 flex flex-wrap justify-center items-center gap-6 md:gap-10 opacity-90 mt-auto pt-10">
+          {['Google', 'ChatGPT', 'Gemini', 'TikTok', 'YouTube', 'Pinterest', 'GIPHY', 'reddit', 'amazon'].map((platform) => (
+            <span key={platform} className="text-white text-sm md:text-lg font-bold tracking-tight">
+              {platform}
+            </span>
+          ))}
+        </motion.div>
       </div>
     </section>
   );
@@ -280,12 +280,12 @@ const Hero = React.forwardRef((props, ref) => {
 
 const DemandAndDiscovery = () => {
   const logos = ['CapitalOne', 'Red Bull', 'JD', 'Kroger', 'HubSpot', 'XBOX', 'CapitalOne', 'Red Bull', 'JD', 'Kroger', 'HubSpot', 'XBOX'];
-  
+
   return (
     <section className="bg-[#EFEEEC] text-[#111212] pt-12 pb-24 md:pb-32 overflow-hidden rounded-t-[2.5rem] md:rounded-t-[4rem] relative z-20">
       {/* Scrolling Marquee */}
       <div className="w-full flex overflow-hidden border-b border-gray-300 pb-12 mb-16 md:mb-24">
-        <motion.div 
+        <motion.div
           className="flex space-x-16 md:space-x-32 items-center whitespace-nowrap px-8"
           animate={{ x: ["0%", "-50%"] }}
           transition={{ repeat: Infinity, ease: "linear", duration: 30 }}
@@ -300,7 +300,7 @@ const DemandAndDiscovery = () => {
 
       <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
-          
+
           {/* Left Column */}
           <div className="lg:col-span-5 flex flex-col justify-between">
             <Reveal>
@@ -309,7 +309,7 @@ const DemandAndDiscovery = () => {
                 <span className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-lg">+</span>
               </div>
             </Reveal>
-            
+
             <Reveal delay={0.2}>
               <p className="text-xl md:text-3xl font-semibold tracking-tight leading-snug max-w-lg">
                 A global team of search-first content marketers engineering semantic relevancy & category signals for both the internet and people
@@ -321,16 +321,16 @@ const DemandAndDiscovery = () => {
           <div className="lg:col-span-7 flex flex-col justify-end">
             <Reveal delay={0.3}>
               <h2 className="text-[4rem] md:text-[6rem] lg:text-[7.5rem] font-black tracking-tighter leading-[0.9] mb-12">
-                Driving Demand &<br/>
-                Discovery 
-                <img 
-                  src="https://picsum.photos/80/80?random=30" 
-                  alt="Discovery icon" 
+                Driving Demand &<br />
+                Discovery
+                <img
+                  src="https://picsum.photos/80/80?random=30"
+                  alt="Discovery icon"
                   className="inline-block w-16 h-16 md:w-24 md:h-24 rounded-2xl object-cover align-baseline ml-4 border border-gray-300"
                 />
               </h2>
             </Reveal>
-            
+
             <Reveal delay={0.4} className="flex gap-4">
               <button className="bg-white px-6 py-3 rounded-full text-[13px] font-bold tracking-wide border border-gray-200 hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm flex items-center gap-2">
                 Our Story <span>↗</span>
@@ -365,7 +365,7 @@ const WorkTitle = ({ work, i, total, scrollYProgress }) => {
   );
 
   return (
-    <motion.div 
+    <motion.div
       style={{ opacity, scale }}
       className="flex flex-col"
     >
@@ -439,28 +439,28 @@ const FeaturedWork = React.forwardRef((props, ref) => {
     <section ref={containerRef} className="bg-white w-full h-[400vh] relative z-20">
       <div className="sticky top-0 h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-8 overflow-hidden">
         <div className="bg-[#111212] w-full h-full rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col md:flex-row relative shadow-2xl">
-          
+
           {/* Left Side - Information (Smooth Scrolling Titles) */}
           <div className="w-full md:w-1/2 h-full flex flex-col justify-center px-8 md:px-16 lg:px-20 relative z-20 bg-[#111212]">
             <div className="absolute top-12 md:top-20 left-8 md:left-16 lg:left-20">
               <h2 className="text-sm font-bold tracking-[0.2em] uppercase text-[#EFEEEC] opacity-60">Featured Work</h2>
             </div>
-            
+
             <div className="relative h-[60vh] flex flex-col justify-center overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-[#111212] to-transparent z-30" />
               <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#111212] to-transparent z-30" />
-              
-              <motion.div 
+
+              <motion.div
                 style={{ y: yLeft }}
                 className="flex flex-col space-y-4"
               >
                 {works.map((work, i) => (
-                  <WorkTitle 
-                    key={i} 
-                    work={work} 
-                    i={i} 
-                    total={works.length} 
-                    scrollYProgress={scrollYProgress} 
+                  <WorkTitle
+                    key={i}
+                    work={work}
+                    i={i}
+                    total={works.length}
+                    scrollYProgress={scrollYProgress}
                   />
                 ))}
               </motion.div>
@@ -469,17 +469,17 @@ const FeaturedWork = React.forwardRef((props, ref) => {
 
           {/* Right Side - Animated Scrolling Column */}
           <div className="w-full md:w-1/2 h-full relative overflow-hidden px-4 md:px-8">
-            <motion.div 
+            <motion.div
               style={{ y: yRight }}
               className="flex flex-col gap-8 py-[25vh]"
             >
               {works.map((work, i) => (
                 <div key={i} className="featured-work-image w-full flex-shrink-0">
                   <div className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-900 shadow-xl group cursor-pointer">
-                    <img 
-                      src={work.img} 
-                      alt={work.client} 
-                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" 
+                    <img
+                      src={work.img}
+                      alt={work.client}
+                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                     />
                     <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6">
                       <button className="bg-[#111212]/60 backdrop-blur-md px-4 py-2 md:px-5 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-bold tracking-wide border border-white/20 flex items-center gap-2 hover:bg-white hover:text-black transition-colors duration-300">
@@ -504,7 +504,7 @@ const ServicesAndBanner = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
           <Reveal>
             <h2 className="text-6xl md:text-[5.5rem] lg:text-[7.5rem] font-bold tracking-tighter leading-none flex items-center gap-4">
-              Our 
+              Our
               <img src="https://picsum.photos/120/120?random=50" className="w-16 h-16 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-3xl object-cover -mt-2" alt="Services" />
               Services
             </h2>
@@ -534,7 +534,7 @@ const ServicesAndBanner = () => {
 
       {/* Marquee Banner */}
       <div className="w-full overflow-hidden flex pt-8 md:pt-12">
-        <motion.div 
+        <motion.div
           className="flex whitespace-nowrap items-center"
           animate={{ x: ["0%", "-50%"] }}
           transition={{ repeat: Infinity, ease: "linear", duration: 25 }}
@@ -606,7 +606,7 @@ const LegacyInTheMaking = React.forwardRef((props, ref) => {
 
   const y0 = useTransform(scrollYProgress, [0, 0.33], ["0vh", "-150vh"]);
   const y1 = useTransform(scrollYProgress, [0.33, 0.66], ["0vh", "-150vh"]);
-  
+
   const transforms = [y0, y1, null];
 
   return (
@@ -683,7 +683,7 @@ const WhatsNew = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16">
           <Reveal>
             <h2 className="text-7xl md:text-8xl lg:text-[10rem] font-bold tracking-tighter flex items-center gap-4">
-              What's 
+              What's
               <div className="w-16 h-12 md:w-24 md:h-16 lg:w-32 lg:h-20 bg-gray-900 rounded-2xl overflow-hidden mt-2 relative">
                 <img src="https://picsum.photos/200/150?random=103" alt="New" className="absolute inset-0 w-full h-full object-cover opacity-80" />
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -707,12 +707,12 @@ const WhatsNew = () => {
               <div className="flex flex-col group cursor-pointer">
                 {/* Image Container */}
                 <div className="relative w-full aspect-square rounded-[2rem] md:rounded-[3rem] overflow-hidden bg-gray-100 mb-8">
-                  <img 
-                    src={post.img} 
-                    alt={post.title} 
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]" 
+                  <img
+                    src={post.img}
+                    alt={post.title}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
                   />
-                  
+
                   {/* Category Tag */}
                   <div className="absolute top-6 left-6">
                     <span className="bg-[#111212]/20 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wide border border-white/20">
@@ -771,85 +771,111 @@ const WhatsNew = () => {
 };
 
 const Footer = () => {
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0.9, 1], [100, 0]);
-
   return (
-    <footer className="bg-[#111212] pt-32 pb-16 px-6 md:px-12 border-t border-gray-800/50 relative overflow-hidden">
-      <motion.div style={{ y }} className="max-w-screen-2xl mx-auto flex flex-col relative z-10">
-        
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-16 mb-32">
-          <div className="md:col-span-6 space-y-12">
-            <h2 className="text-6xl md:text-[6rem] lg:text-[7.5rem] font-bold uppercase tracking-tighter leading-[0.9] max-w-2xl text-white">
-              Stay<br/>Updated<br/>With Rise<br/>News
-            </h2>
-            <button className="bg-white text-[#111212] px-10 py-4 rounded-full text-xs font-black uppercase tracking-widest hover:scale-105 transition-all duration-300 shadow-xl">
-              Subscribe
-            </button>
-          </div>
-          
-          <div className="md:col-span-3 pt-4">
-            <div className="flex flex-col space-y-4">
-              {['Services', 'Work', 'About', 'Culture', 'Meet The Risers', 'Testimonials', 'Blog', 'Careers'].map(link => (
-                <a key={link} href="#" className="text-[13px] font-black uppercase tracking-widest text-white hover:text-gray-400 transition-colors duration-300">
-                  {link}
-                </a>
-              ))}
+    <footer className="bg-[#EFEEEC] px-2 pb-2 md:px-3 md:pb-3">
+      <div className="bg-[#111212] text-white rounded-[2.5rem] md:rounded-[3.5rem] pt-12 pb-6 px-6 md:px-10 overflow-hidden">
+        <div className="w-full">
+          {/* Top Section */}
+          <div className="flex flex-col lg:flex-row justify-between items-start gap-12 mb-12 lg:mb-16">
+            {/* Left: Newsletter */}
+            <div className="lg:w-[30%]">
+              <h2 className="text-xl md:text-2xl font-bold mb-6 tracking-tight">Stay updated with Rise news</h2>
+              <div className="relative group max-w-sm">
+                <input
+                  type="email"
+                  placeholder="Your Email Address"
+                  className="w-full bg-[#222] border-none rounded-full py-4 px-6 text-sm focus:ring-1 focus:ring-[#A3F1D1] transition-all outline-none text-white placeholder-gray-500"
+                />
+                <button className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-[#A3F1D1] text-black w-9 h-9 rounded-full flex items-center justify-center hover:scale-105 transition-transform">
+                  <span className="text-base">↗</span>
+                </button>
+              </div>
+
+              {/* Social Icons */}
+              <div className="flex gap-2 mt-6">
+                {['f', '𝕏', 'in', 'yt', 'tt', 'ig'].map((icon, i) => (
+                  <a key={i} href="#" className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors border border-white/5">
+                    <span className="text-[9px] font-bold uppercase tracking-tighter">
+                      {icon === 'yt' ? <span className="text-[7px]">▶</span> : icon}
+                      <span className="text-[5px] ml-0.5">↗</span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Links */}
+            <div className="lg:w-[65%] flex flex-wrap md:flex-nowrap justify-between gap-8 md:gap-4 lg:pr-12">
+              <div className="flex flex-col gap-2.5 min-w-[140px]">
+                <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Services</span>
+                {['Services', 'Work', 'About', 'Culture', 'Meet The Risers'].map(link => (
+                  <a key={link} href="#" className="text-sm font-bold hover:text-[#A3F1D1] transition-colors">{link}</a>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2.5 min-w-[140px]">
+                <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Resources</span>
+                {['Testimonials', 'Blog & Resources', 'Webinars', 'Careers'].map(link => (
+                  <a key={link} href="#" className="text-sm font-bold hover:text-[#A3F1D1] transition-colors">{link}</a>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2.5 min-w-[140px]">
+                <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Locations</span>
+                {['Sheffield', 'Manchester', 'London', 'New York', 'Contact'].map(link => (
+                  <a key={link} href="#" className="text-sm font-bold hover:text-[#A3F1D1] transition-colors">{link}</a>
+                ))}
+              </div>
             </div>
           </div>
-          
-          <div className="md:col-span-3 pt-4">
-            <div className="flex flex-col space-y-4">
-              {['Sheffield', 'Manchester', 'London', 'New York', 'Contact'].map(link => (
-                <a key={link} href="#" className="text-[13px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-colors duration-300">
-                  {link}
-                </a>
-              ))}
+
+          {/* Huge Logo Section */}
+          <div className="relative mb-6">
+            <h1 className="text-[16vw] lg:text-[18vw] font-bold tracking-[-0.06em] leading-[0.75] whitespace-nowrap flex items-baseline -ml-7 md:-ml-11">
+              Rise at Seven
+              <span className="inline-flex items-center justify-center border-[2px] md:border-[3.5px] border-white rounded-full w-[0.8em] h-[0.8em] ml-[0.05em] translate-y-[-0.1em]">
+                <span className="text-[0.4em] font-black">R</span>
+              </span>
+            </h1>
+          </div>
+
+          {/* Bottom Footer */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end pt-8 border-t border-white/10 gap-4">
+            <div className="text-[10px] text-gray-500 font-medium leading-relaxed max-w-4xl">
+              © 2025 Rise at Seven Ltd. All rights reserved • Company Number 11955187 • VAT Registered GB 322402945 • Privacy Policy • Terms & conditions
+            </div>
+            <div className="text-[10px] text-gray-500 font-medium">
+              Website Made by <a href="#" className="text-white hover:underline">Shape</a>
             </div>
           </div>
         </div>
-        
-        <div className="pt-12 border-t border-gray-800/50 flex flex-col md:flex-row justify-between items-start md:items-center space-y-6 md:space-y-0">
-          <div className="flex gap-8">
-            <a href="#" className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors">Terms & Conditions</a>
-          </div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600">
-            © 2025 Rise at Seven
-          </p>
-        </div>
-      </motion.div>
+      </div>
     </footer>
   );
 };
 
-const Char = ({ char, index, scrollYProgress }) => {
-  // Perfectly tuned to trigger when the character is at ~90vw on the screen (further right).
-  const sEnter = 0.05 + (index * 0.022);
-  const sPeak = sEnter + 0.04;
-  const sSettle = sEnter + 0.09;
 
+const Char = ({ char, index, scrollYProgress }) => {
+  // Triggers slightly more towards the right (earlier in scroll)
+  const sEnter = 0.33 + (index * 0.012);
+  const sPeak = sEnter + 0.07;
+  const sSettle = sEnter + 0.14;
+
+  // More dramatic up-to-down wave effect
   const y = useTransform(
     scrollYProgress,
     [sEnter, sPeak, sSettle],
-    [300, -150, 0]
+    [-250, 150, 0]
   );
 
+  // Keep them straight as they move towards the left
   const rotate = useTransform(
     scrollYProgress,
     [sEnter, sPeak, sSettle],
-    [35, -15, 0]
-  );
-
-  const opacity = useTransform(
-    scrollYProgress,
-    [sEnter, sEnter + 0.03],
-    [0, 1]
+    [-20, 10, 0]
   );
 
   return (
     <motion.span
-      style={{ y, rotate, opacity }}
+      style={{ y, rotate }}
       className="text-[6rem] md:text-[10rem] lg:text-[14rem] font-bold tracking-tighter leading-none text-[#111212] inline-block origin-center"
     >
       {char === " " ? "\u00A0" : char}
@@ -864,18 +890,18 @@ const ScrollingText = () => {
     offset: ["start end", "end start"]
   });
 
-  const x = useTransform(scrollYProgress, [0, 1], ["100vw", "-100%"]);
+  const x = useTransform(scrollYProgress, [0.3, 0.95], ["100vw", "-100%"]);
   const text = "Ready to Rise at Seven?";
 
   return (
     <section ref={containerRef} className="h-screen w-full overflow-hidden bg-white flex items-center">
       <motion.div style={{ x }} className="whitespace-nowrap flex">
         {text.split("").map((char, i) => (
-          <Char 
-            key={i} 
-            char={char} 
-            index={i} 
-            scrollYProgress={scrollYProgress} 
+          <Char
+            key={i}
+            char={char}
+            index={i}
+            scrollYProgress={scrollYProgress}
           />
         ))}
       </motion.div>
