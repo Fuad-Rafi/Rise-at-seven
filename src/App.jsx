@@ -476,7 +476,7 @@ const DemandAndDiscovery = () => {
   );
 };
 
-const WorkTitle = ({ work, i, total, scrollYProgress }) => {
+const WorkTitle = ({ work, i, total, scrollYProgress, setIsHovering }) => {
   const isLastTwo = work.client === 'Leading E Sim brand globally';
   const firstPart = isLastTwo ? 'Leading E Sim' : work.client;
   const secondPart = isLastTwo ? 'brand globally' : '';
@@ -497,6 +497,8 @@ const WorkTitle = ({ work, i, total, scrollYProgress }) => {
     <motion.div
       style={{ opacity, scale }}
       className="flex flex-col"
+      onMouseEnter={() => setIsHovering && setIsHovering(i)}
+      onMouseLeave={() => setIsHovering && setIsHovering(null)}
     >
       <div className="flex items-start">
         <h3 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4.5rem] xl:text-[5.5rem] font-bold tracking-tighter leading-[0.9] text-[#EFEEEC]">
@@ -519,11 +521,11 @@ const WorkTitle = ({ work, i, total, scrollYProgress }) => {
 
 const FeaturedWork = React.forwardRef((props, ref) => {
   const works = [
-    { client: 'SIXT', year: '[2023-2025]', img: 'https://picsum.photos/1000/1200?random=40', tag: 'Car rental' },
-    { client: 'Dojo - B2B', year: '[2021-2025]', img: 'https://picsum.photos/1000/1200?random=41', tag: 'Fintech' },
-    { client: 'Magnet Trade - B2B', year: '[2023-2024]', img: 'https://picsum.photos/1000/1200?random=42', tag: 'B2B Trade' },
-    { client: 'Leading E Sim brand globally', year: '[2023-2025]', img: 'https://picsum.photos/1000/1200?random=43', tag: 'Tech' },
-    { client: 'JD Sports', year: '[2025]', img: 'https://picsum.photos/1000/1200?random=44', tag: 'Retail' },
+    { client: 'JD Sports', year: '[2023-2025]', img: 'https://picsum.photos/1000/1200?random=40', tag: 'Car rental' },
+    { client: 'Dojo', year: '[2021-2025]', img: 'https://picsum.photos/1000/1200?random=41', tag: 'Fintech' },
+    { client: 'Magnet Trade', year: '[2023-2024]', img: 'https://picsum.photos/1000/1200?random=42', tag: 'B2B Trade' },
+    { client: 'Pookie', year: '[2023-2025]', img: 'https://picsum.photos/1000/1200?random=43', tag: 'Tech' },
+    { client: 'Easy peasy', year: '[2025]', img: 'https://picsum.photos/1000/1200?random=44', tag: 'Retail' },
     { client: 'Parkdean Resorts', year: '[2019-2025]', img: 'https://picsum.photos/1000/1200?random=45', tag: 'Travel' }
   ];
 
@@ -569,6 +571,31 @@ const FeaturedWork = React.forwardRef((props, ref) => {
   const yRight = useTransform(scrollYProgress, [0, 1], ["0%", `-${(works.length - 1) * 100 / works.length}%`]);
   const yLeft = useTransform(scrollYProgress, [0, 1], ["20%", "-20%"]);
 
+  // Per-item motion values so each left title and right image use the same progress curve
+  const itemOpacities = works.map((_, i) =>
+    useTransform(
+      scrollYProgress,
+      [Math.max(0, (i - 1.5) / works.length), i / works.length, Math.min(1, (i + 1.5) / works.length)],
+      [0.1, 1, 0.1]
+    )
+  );
+
+  const itemScales = works.map((_, i) =>
+    useTransform(
+      scrollYProgress,
+      [Math.max(0, (i - 1) / works.length), i / works.length, Math.min(1, (i + 1) / works.length)],
+      [0.95, 1, 0.95]
+    )
+  );
+
+  const itemYs = works.map((_, i) =>
+    useTransform(
+      scrollYProgress,
+      [Math.max(0, (i - 1) / works.length), i / works.length, Math.min(1, (i + 1) / works.length)],
+      ["12%", "0%", "-12%"]
+    )
+  );
+
   return (
     <section ref={setSectionRef} className="bg-white w-full h-[400vh] relative z-20">
       <div className="sticky top-0 h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-8 overflow-hidden">
@@ -595,6 +622,7 @@ const FeaturedWork = React.forwardRef((props, ref) => {
                     i={i}
                     total={works.length}
                     scrollYProgress={scrollYProgress}
+                    setIsHovering={setIsHovering}
                   />
                 ))}
               </motion.div>
@@ -607,26 +635,34 @@ const FeaturedWork = React.forwardRef((props, ref) => {
               style={{ y: yRight }}
               className="flex flex-col gap-8 py-[25vh]"
             >
-              {works.map((work, i) => (
-                <div key={i} className="featured-work-image w-full flex-shrink-0">
-                  <div
-                    className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-900 shadow-xl group"
-                    onMouseEnter={() => setIsHovering(i)}
-                    onMouseLeave={() => setIsHovering(null)}
-                    onMouseMove={(e) => handleMouseMove(e, i)}
+              {works.map((work, i) => {
+                const hoverActive = isHovering === i;
+                return (
+                  <motion.div
+                    key={i}
+                    style={{ opacity: itemOpacities[i], y: itemYs[i], scale: itemScales[i] }}
+                    className="featured-work-image w-full flex-shrink-0"
                   >
-                    {/* Main Image */}
-                    <img
-                      src={work.img}
-                      alt={work.client}
-                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
-                    />
+                    <div
+                      className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-900 shadow-xl group"
+                      onMouseEnter={() => setIsHovering(i)}
+                      onMouseLeave={() => setIsHovering(null)}
+                      onMouseMove={(e) => handleMouseMove(e, i)}
+                    >
+                      {/* Main Image */}
+                      <img
+                        src={work.img}
+                        alt={work.client}
+                        className="absolute inset-0 w-full h-full object-cover opacity-80 transition-transform duration-700"
+                      />
 
-                    {/* Hover Overlay */}
-                    <div className={cn(
-                      "absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out flex flex-col justify-between p-8 md:p-12 z-10",
-                      i % 2 === 0 ? "bg-[#fbd2d7]" : "bg-[#bde6ff]"
-                    )}>
+                      {/* Hover Overlay */}
+                      <div className={cn(
+                        "absolute inset-0 transition-all duration-500 ease-out flex flex-col justify-between p-8 md:p-12 z-10",
+                        (hoverActive ? "opacity-100" : "opacity-0"),
+                        i % 2 === 0 ? "bg-[#fbd2d7]" : "bg-[#bde6ff]",
+                        "group-hover:opacity-100"
+                      )}>
                       {/* Top text on hover */}
                       <div className="transform -translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
                         <h4 className="text-black text-2xl md:text-4xl font-bold leading-tight tracking-tight max-w-[80%]">
@@ -668,14 +704,19 @@ const FeaturedWork = React.forwardRef((props, ref) => {
                     </div>
 
                     {/* Default Tag */}
-                    <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 group-hover:opacity-0 transition-opacity duration-300">
+                    <div className={cn(
+                      "absolute bottom-4 right-4 md:bottom-6 md:right-6 transition-opacity duration-300",
+                      hoverActive ? 'opacity-0' : 'opacity-100',
+                      'group-hover:opacity-0'
+                    )}>
                       <button className="bg-[#111212]/60 backdrop-blur-md px-4 py-2 md:px-5 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-bold tracking-wide border border-white/20 flex items-center gap-2 hover:bg-white hover:text-black transition-colors duration-300">
                         <span className="text-lg leading-none mt-[-2px]">⚲</span> {work.tag} <span className="ml-1">↘</span>
                       </button>
                     </div>
-                  </div>
-                </div>
-              ))}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </motion.div>
           </div>
         </div>
@@ -819,7 +860,7 @@ const ServicesAndBanner = () => {
 
       {/* Marquee: Scroll-reactive parallax movement */}
       <div className="flex w-full pt-8 md:pt-12">
-        <ParallaxMarquee baseVelocity={-2}>
+        <ParallaxMarquee baseVelocity={-0.67}>
           {pairRow}
         </ParallaxMarquee>
       </div>
