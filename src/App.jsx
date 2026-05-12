@@ -1,11 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useVelocity, useAnimationFrame, useMotionValue, wrap } from 'framer-motion';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 // Utility for cleaner class names
 function cn(...inputs) {
   return twMerge(clsx(inputs));
+}
+
+function assignRef(ref, node) {
+  if (ref == null) return;
+  if (typeof ref === 'function') ref(node);
+  else ref.current = node;
 }
 
 // Reusable scroll reveal component
@@ -23,166 +29,252 @@ const Reveal = ({ children, className, delay = 0, y = 50 }) => {
   );
 };
 
-const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isHidden, setIsHidden] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [hoveredNav, setHoveredNav] = useState(null);
+const ANNOUNCEMENT_PHRASE = '🚨 The Category Leaderboard - Live Now';
+
+const AnnouncementMarquee = React.forwardRef((props, ref) => (
+  <div ref={ref} className="w-full bg-white px-2 pt-2 pb-1 md:px-3 md:pt-3 md:pb-2">
+    <div className="relative z-[51] overflow-hidden rounded-xl bg-[#A3F1D1] py-2 md:rounded-[1rem] md:py-3">
+      <div className="flex items-center justify-center px-4">
+        <a href="#" className="text-center text-[11px] font-bold uppercase tracking-wider text-[#111212] md:text-[13px]">
+          {ANNOUNCEMENT_PHRASE}
+        </a>
+      </div>
+    </div>
+  </div>
+));
+AnnouncementMarquee.displayName = 'AnnouncementMarquee';
+
+/** Scroll-driven nav: hide on Featured / Legacy / Ready-to-Rise; hero blend vs glass pill. */
+function useSiteNav({ heroRef, featuredRef, legacyRef, scrollingRef, announcementRef }) {
+  const [navVisible, setNavVisible] = useState(true);
+  const [variant, setVariant] = useState('hero');
+  const [navTopPx, setNavTopPx] = useState(56);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
+    let raf = 0;
 
-      // Add background when scrolled past top
-      if (currentScrollY > 50) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
+    /** Hide nav only when user has scrolled into the immersive section (top edge near viewport top), not when the tall section box merely intersects from below (that hid the bar during Demand). */
+    const immersiveOverlap = (r) =>
+      r != null && r.bottom > 32 && r.top < window.innerHeight - 24 && r.top <= 96;
+
+    const tick = () => {
+      const feat = featuredRef.current?.getBoundingClientRect();
+      const leg = legacyRef.current?.getBoundingClientRect();
+      const rise = scrollingRef.current?.getBoundingClientRect();
+      const hero = heroRef.current?.getBoundingClientRect();
+      const ann = announcementRef.current?.getBoundingClientRect();
+
+      let topPx = 12;
+      if (ann && ann.bottom > 0) {
+        topPx = ann.bottom + 8;
+      }
+      setNavTopPx((prev) => (Math.abs(prev - topPx) < 0.5 ? prev : topPx));
+
+      if (immersiveOverlap(feat) || immersiveOverlap(leg) || immersiveOverlap(rise)) {
+        setNavVisible(false);
+        return;
       }
 
-      // Check if hero, featured work, or legacy sections are fully in view
-      const checkSectionInView = (ref) => {
-        if (!ref || !ref.current) return false;
-        const rect = ref.current.getBoundingClientRect();
-        // Hide navbar only when section is fully visible in viewport
-        return rect.top <= 0 && rect.bottom >= window.innerHeight;
-      };
-
-      const heroInView = checkSectionInView(heroRef);
-      const featuredInView = checkSectionInView(featuredWorkRef);
-      const legacyInView = checkSectionInView(legacyRef);
-
-      setIsHidden(heroInView || featuredInView || legacyInView);
-      setLastScrollY(currentScrollY);
+      setNavVisible(true);
+      const pastHero = !hero || hero.bottom < 56;
+      setVariant(pastHero ? 'floating' : 'hero');
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [heroRef, featuredWorkRef, legacyRef]);
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(tick);
+    };
 
-  // Body scroll lock
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    tick();
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [heroRef, featuredRef, legacyRef, scrollingRef, announcementRef]);
+
+  return { navVisible, variant, navTopPx };
+}
+
+const NavBarInner = ({
+  hoveredNav,
+  setHoveredNav,
+  isOpen,
+  setIsOpen,
+  variant = 'floating',
+  visible = true,
+  navTopPx = 56,
+}) => {
+  const isHero = variant === 'hero';
 
   return (
     <>
-      {/* Announcement Bar */}
-      <div className="bg-white w-full pt-2 px-2 md:pt-3 md:px-3">
-        <div className="w-full bg-[#A3F1D1] text-[#111212] text-center py-1.5 md:py-2 text-[10px] md:text-xs font-bold tracking-wider relative z-[51] rounded-xl md:rounded-[1rem]">
-          🚨 The Category Leaderboard - Live Now
-        </div>
-      </div>
-
       <AnimatePresence>
-        {hoveredNav && (
+        {hoveredNav && visible && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[45] bg-black/10 backdrop-blur-md"
+            className={cn(
+              'fixed inset-0 z-[45]',
+              isHero ? 'bg-black/25 backdrop-blur-[2px]' : 'bg-black/10 backdrop-blur-md'
+            )}
           />
         )}
       </AnimatePresence>
 
-      <motion.header
+      <div
         className={cn(
-          "fixed w-[95%] left-1/2 -translate-x-1/2 z-50 px-6 md:px-12 flex justify-between items-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-full",
-          isScrolled ? "bg-white/30 backdrop-blur-md border border-white/40 py-4 top-4" : "bg-white/20 backdrop-blur-sm border border-white/30 py-6 top-6"
+          'fixed left-0 right-0 z-[100] mx-auto w-full max-w-[min(100%,calc(100vw-1.5rem)))] px-2 transition-opacity duration-300 md:px-3',
+          !visible && 'pointer-events-none invisible opacity-0'
         )}
-        initial={{ opacity: 1, scale: 1 }}
-        animate={{ opacity: isHidden ? 0 : 1, scale: isHidden ? 0.95 : 1 }}
-        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        pointerEvents={isHidden ? "none" : "auto"}
+        style={{ top: navTopPx }}
+        aria-hidden={!visible}
       >
-        {/* Logo Text */}
-        <div className="text-2xl font-semibold tracking-tighter text-[#1a1a1a] cursor-pointer flex items-center gap-1">
-          Rise at Seven<span className="text-lg">↘</span>
-        </div>
+        <div
+          className={cn(
+            'flex items-center justify-between gap-3 rounded-full px-4 py-3 transition-all duration-300 md:px-8 md:py-4',
+            isHero
+              ? 'border border-transparent bg-transparent shadow-none'
+              : 'border border-white/55 bg-white/45 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-white/35'
+          )}
+        >
+          <div
+            className={cn(
+              'shrink-0 text-lg font-bold tracking-tighter md:text-2xl',
+              isHero ? 'text-white' : 'text-[#111212]'
+            )}
+          >
+            Rise at Seven<span className={cn('text-base md:text-lg', isHero ? 'text-white' : '')}>↘</span>
+          </div>
 
-        {/* Desktop Nav */}
-        <nav className="hidden xl:flex items-center space-x-2 text-[13px] font-bold tracking-wide text-[#1a1a1a]">
-          {['Services +', 'Industries +', 'International +', 'About +'].map((item) => (
+          <nav className="hidden min-w-0 flex-1 justify-center xl:flex xl:px-2">
             <div
-              key={item}
-              className="relative"
-              onMouseEnter={() => setHoveredNav(item)}
-              onMouseLeave={() => setHoveredNav(null)}
+              className={cn(
+                'flex flex-wrap items-center justify-center gap-0.5 text-[11px] font-bold tracking-wide lg:gap-1 lg:text-[12px] xl:text-[13px]',
+                isHero ? 'text-white' : 'text-[#111212]'
+              )}
             >
+              {['Services +', 'Industries +', 'International +', 'About +'].map((item) => (
+                <div
+                  key={item}
+                  className="relative"
+                  onMouseEnter={() => setHoveredNav(item)}
+                  onMouseLeave={() => setHoveredNav(null)}
+                >
+                  <a
+                    href="#"
+                    className={cn(
+                      'block rounded-full px-3 py-2 transition-all duration-300 lg:px-4',
+                      hoveredNav === item
+                        ? isHero
+                          ? 'bg-white text-[#111212]'
+                          : 'bg-[#111212] text-white'
+                        : isHero
+                          ? 'text-white hover:bg-white/15 hover:text-white'
+                          : 'text-[#111212] hover:text-gray-700'
+                    )}
+                  >
+                    {item}
+                  </a>
+                  <AnimatePresence>
+                    {hoveredNav === item && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 15 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        className="absolute left-1/2 top-full z-[60] mt-4 flex w-[min(100vw-2rem,350px)] -translate-x-1/2 rounded-[1.5rem] bg-white p-2 shadow-2xl"
+                      >
+                        <div className="flex w-1/2 items-center justify-center p-4 text-center">
+                          <h3 className="text-xl font-bold leading-tight tracking-tight text-[#111212]">
+                            {item === 'Services +'
+                              ? 'B2B Marketing'
+                              : item === 'Industries +'
+                                ? 'Retail & eCommerce'
+                                : item === 'International +'
+                                  ? 'Global Reach'
+                                  : 'Our Story'}
+                          </h3>
+                        </div>
+                        <div className="relative aspect-square w-1/2 overflow-hidden rounded-xl bg-gray-100">
+                          <img
+                            src={`https://picsum.photos/400/400?random=${item.length * 5}`}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
               <a
                 href="#"
                 className={cn(
-                  "transition-all duration-300 px-4 py-2 rounded-full block",
-                  hoveredNav === item ? "bg-[#1a1a1a] text-white" : "text-[#1a1a1a] hover:text-gray-600"
+                  'relative flex items-center px-3 py-2 lg:px-4',
+                  isHero ? 'text-white hover:text-white/80' : 'text-[#111212] hover:text-gray-700'
                 )}
               >
-                {item}
+                Work
+                <span className="absolute right-1 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#A3F1D1] text-[9px] font-bold text-black">
+                  25
+                </span>
               </a>
-
-              <AnimatePresence>
-                {hoveredNav === item && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 15 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-4 bg-white rounded-[1.5rem] p-2 w-[350px] shadow-2xl z-[60] flex"
-                  >
-                    <div className="w-1/2 p-4 flex items-center justify-center text-center">
-                      <h3 className="text-xl font-bold tracking-tight text-[#111212] leading-tight">
-                        {item === 'Services +' ? 'B2B Marketing' :
-                          item === 'Industries +' ? 'Retail & eCommerce' :
-                            item === 'International +' ? 'Global Reach' : 'Our Story'}
-                      </h3>
-                    </div>
-                    <div className="w-1/2 rounded-xl overflow-hidden bg-gray-100 aspect-square relative">
-                      <img src={`https://picsum.photos/400/400?random=${item.length * 5}`} alt={item} className="absolute inset-0 w-full h-full object-cover" />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <a
+                href="#"
+                className={cn('px-2 py-2', isHero ? 'text-white hover:text-white/80' : 'hover:text-gray-700')}
+              >
+                Careers
+              </a>
+              <a
+                href="#"
+                className={cn('px-2 py-2', isHero ? 'text-white hover:text-white/80' : 'hover:text-gray-700')}
+              >
+                Blog & Resources +
+              </a>
+              <a
+                href="#"
+                className={cn('px-2 py-2', isHero ? 'text-white hover:text-white/80' : 'hover:text-gray-700')}
+              >
+                Webinar
+              </a>
             </div>
-          ))}
-          <a href="#" className="hover:text-gray-600 transition-colors relative flex items-center px-4 text-[#1a1a1a]">
-            Work
-            <span className="absolute top-0 right-0 bg-[#A3F1D1] text-black text-[10px] w-[16px] h-[16px] flex items-center justify-center rounded-full font-bold">25</span>
-          </a>
-          <a href="#" className="hover:text-gray-600 transition-colors px-2 text-[#1a1a1a]">Careers</a>
-          <a href="#" className="hover:text-gray-600 transition-colors px-2 text-[#1a1a1a]">Blog</a>
-          <a href="#" className="hover:text-gray-600 transition-colors px-2 text-[#1a1a1a]">Webinar</a>
-        </nav>
+          </nav>
 
-        {/* Right Actions */}
-        <div className="flex items-center space-x-6 relative z-[65]">
-          <button className="hidden md:flex items-center gap-1.5 bg-[#1a1a1a] text-white px-6 py-2.5 rounded-full text-[13px] font-bold tracking-tight hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
-            Get In Touch <span>↗</span>
-          </button>
-
-          {/* Hamburger */}
-          <button
-            className="xl:hidden w-10 h-10 flex flex-col justify-center items-center space-y-1.5 relative z-[65]"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            <motion.span
-              animate={isOpen ? { rotate: 45, y: 8 } : { rotate: 0, y: 0 }}
-              className="w-8 h-[2px] bg-[#1a1a1a] origin-center transition-transform"
-            />
-            <motion.span
-              animate={isOpen ? { rotate: -45, y: -0 } : { rotate: 0, y: 0 }}
-              className="w-8 h-[2px] bg-[#1a1a1a] origin-center transition-transform"
-            />
-          </button>
+          <div className="flex shrink-0 items-center gap-4">
+            <button
+              type="button"
+              className={cn(
+                'hidden items-center gap-1.5 rounded-full px-5 py-2.5 text-[12px] font-bold tracking-tight transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] md:flex md:px-6 md:text-[13px]',
+                isHero ? 'bg-white text-[#111212]' : 'bg-[#111212] text-white'
+              )}
+            >
+              Get In Touch <span>↗</span>
+            </button>
+            <button
+              type="button"
+              className="flex h-10 w-10 flex-col items-center justify-center space-y-1.5 xl:hidden"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Menu"
+            >
+              <motion.span
+                animate={isOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
+                className={cn('h-0.5 w-7 origin-center', isHero ? 'bg-white' : 'bg-[#111212]')}
+              />
+              <motion.span
+                animate={isOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
+                className={cn('h-0.5 w-7 origin-center', isHero ? 'bg-white' : 'bg-[#111212]')}
+              />
+            </button>
+          </div>
         </div>
-      </motion.header>
+      </div>
 
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -190,17 +282,18 @@ const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-[60] bg-[#111212] p-6 pt-32 flex flex-col"
+            className="fixed inset-0 z-[200] flex flex-col bg-[#111212] p-6 pt-28"
           >
-            <div className="flex flex-col space-y-8 text-4xl font-bold uppercase tracking-tighter">
+            <div className="flex flex-col space-y-8 text-3xl font-bold uppercase tracking-tighter text-white sm:text-4xl">
               {['Services', 'Work', 'About', 'Culture', 'Careers', 'Blog'].map((item, i) => (
                 <motion.a
                   key={item}
                   href="#"
                   initial={{ opacity: 0, x: 50 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + (i * 0.05), duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="hover:text-gray-400 transition-colors"
+                  transition={{ delay: 0.15 + i * 0.05, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                  className="hover:text-gray-400"
+                  onClick={() => setIsOpen(false)}
                 >
                   {item}
                 </motion.a>
@@ -213,134 +306,170 @@ const Header = ({ heroRef, featuredWorkRef, legacyRef }) => {
   );
 };
 
-const Hero = React.forwardRef((props, ref) => {
+const HeroWithNav = React.forwardRef((props, ref) => {
   const { scrollY } = useScroll();
-  const y = useTransform(scrollY, [0, 1000], [0, 300]);
-  const opacity = useTransform(scrollY, [0, 500], [1, 0]);
+  const y = useTransform(scrollY, [0, 900], [0, 180]);
+  const opacity = useTransform(scrollY, [0, 400], [1, 0.35]);
 
   return (
-    <section ref={ref} className="bg-white w-full px-2 pt-2 pb-0 md:px-3 md:pt-3 md:pb-0">
-      <div className="relative min-h-[calc(100vh-3rem)] rounded-3xl md:rounded-[2.5rem] overflow-hidden flex flex-col justify-center items-center w-full pt-20 pb-12">
-        {/* Background Image (Video Placeholder) */}
-        <div className="absolute inset-0 w-full h-full z-0 bg-black">
+    <section ref={ref} className="w-full bg-white px-2 pb-0 pt-1 md:px-3 md:pt-2 md:pb-0">
+      <div className="relative flex min-h-[calc(100dvh-4rem)] flex-col rounded-3xl md:min-h-[calc(100dvh-3rem)] md:rounded-[2.5rem]">
+        {/* Clipped background — hero content; nav is fixed in App */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-3xl bg-[#0a0a0a] md:rounded-[2.5rem]">
           <img
             src="https://picsum.photos/1920/1080?random=20"
-            alt="Hero Background"
-            className="w-full h-full object-cover opacity-60"
+            alt=""
+            className="h-full min-h-[120%] w-full scale-105 object-cover opacity-75"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#111212]"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/75" />
         </div>
 
-        <motion.div style={{ y, opacity }} className="relative z-10 flex flex-col items-center w-full max-w-7xl px-6 text-center mt-auto mb-auto">
-          {/* Top small text and awards */}
-          <div className="flex flex-col items-center mb-6 space-y-4">
-            <p className="text-white text-[11px] md:text-sm font-bold tracking-[0.2em] uppercase leading-tight">
-              #1 Most Recommended<br />Content Marketing Agency
-            </p>
-            <div className="flex items-center space-x-2 md:space-x-4 opacity-80">
-              {/* Using text blocks as placeholders for the award logos */}
-              <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">AWARDS</span>
-              <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">THE DRUM</span>
-              <span className="text-white text-[10px] md:text-xs border border-white/30 px-2 py-1 rounded">GLOBAL SEARCH</span>
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-14 md:pt-16">
+          <motion.div
+            style={{ y, opacity }}
+            className="flex flex-1 flex-col items-center justify-center px-4 pb-6 pt-2 text-center md:px-8 md:pb-8 md:pt-4"
+          >
+            <div className="mb-5 flex max-w-4xl flex-col items-center space-y-3 md:mb-8 md:space-y-4">
+              <p className="text-[10px] font-bold uppercase leading-snug tracking-[0.18em] text-white md:text-xs md:tracking-[0.2em]">
+                #1 Most recommended
+                <br />
+                content marketing agency
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 opacity-90 md:gap-3">
+                {['AWARDS', 'THE DRUM', 'GLOBAL SEARCH'].map((t) => (
+                  <span
+                    key={t}
+                    className="rounded border border-white/35 px-2 py-1 text-[9px] font-semibold text-white md:text-[10px]"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
             </div>
+
+            <h1 className="flex w-full max-w-6xl flex-col items-center text-5xl font-bold leading-[0.92] tracking-tighter text-white sm:text-6xl md:text-8xl lg:text-[8.5rem] xl:text-[9.25rem]">
+              <span className="flex items-baseline gap-1">
+                <span className="text-[0.35em] font-bold text-white/80">#</span>
+                <span>We Create</span>
+              </span>
+              <span className="mt-1 flex flex-wrap items-center justify-center gap-2 md:mt-2 md:gap-4 lg:gap-5">
+                <span>Category</span>
+                <img
+                  src="https://picsum.photos/160/160?random=21"
+                  alt=""
+                  className="h-14 w-14 rounded-2xl object-cover md:h-24 md:w-24 lg:h-28 lg:w-28 lg:rounded-3xl"
+                />
+                <span>Leaders</span>
+              </span>
+            </h1>
+
+            <p className="mt-5 max-w-3xl text-lg font-medium tracking-tight text-white md:mt-8 md:text-2xl lg:text-3xl">
+              on every searchable platform
+            </p>
+
+            <motion.div
+              style={{ opacity }}
+              className="mt-8 flex max-w-5xl flex-wrap items-center justify-center gap-x-5 gap-y-3 md:mt-10 md:gap-x-8 md:gap-y-4"
+            >
+              {['Google', 'ChatGPT', 'Gemini', 'TikTok', 'YouTube', 'Pinterest', 'GIPHY', 'reddit', 'amazon'].map((platform) => (
+                <span key={platform} className="text-sm font-bold tracking-tight text-white/95 md:text-base">
+                  {platform}
+                </span>
+              ))}
+            </motion.div>
+          </motion.div>
+
+          <div className="relative z-10 mt-auto grid w-full gap-6 px-5 pb-10 pt-4 text-white md:grid-cols-2 md:gap-8 md:px-10 md:pb-14 md:pt-6">
+            <p className="max-w-lg text-left text-[11px] font-semibold leading-relaxed text-white/95 md:text-sm md:leading-relaxed">
+              Organic media planners creating, distributing &amp; optimising search-first content for SEO, Social, PR, AI and LLM
+              search.
+            </p>
+            <p className="max-w-lg text-left text-[11px] font-semibold leading-relaxed text-white/95 md:text-right md:text-sm md:leading-relaxed lg:justify-self-end">
+              4 Global Offices serving UK, USA (New York) &amp; EU.
+            </p>
           </div>
-
-          {/* Main Headline */}
-          <h1 className="text-6xl md:text-8xl lg:text-[9.5rem] font-bold tracking-tighter leading-[0.95] text-white flex flex-col items-center justify-center w-full">
-            <span>We Create</span>
-            <span className="flex items-center flex-wrap justify-center gap-2 md:gap-4 lg:gap-6 mt-1 lg:mt-3">
-              Category
-              <img
-                src="https://picsum.photos/160/160?random=21"
-                alt="Leader"
-                className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 rounded-3xl object-cover"
-              />
-              Leaders
-            </span>
-          </h1>
-
-          {/* Subhead */}
-          <p className="text-xl md:text-3xl font-medium tracking-tight text-white mt-6 lg:mt-10 mb-8">
-            on every searchable platform
-          </p>
-        </motion.div>
-
-        {/* Platforms Logos */}
-        <motion.div style={{ opacity }} className="relative z-10 flex flex-wrap justify-center items-center gap-6 md:gap-10 opacity-90 mt-auto pt-10">
-          {['Google', 'ChatGPT', 'Gemini', 'TikTok', 'YouTube', 'Pinterest', 'GIPHY', 'reddit', 'amazon'].map((platform) => (
-            <span key={platform} className="text-white text-sm md:text-lg font-bold tracking-tight">
-              {platform}
-            </span>
-          ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
 });
 
 const DemandAndDiscovery = () => {
-  const logos = ['CapitalOne', 'Red Bull', 'JD', 'Kroger', 'HubSpot', 'XBOX', 'CapitalOne', 'Red Bull', 'JD', 'Kroger', 'HubSpot', 'XBOX'];
+  const logos = ['Emirates', 'Shark NINJA', 'CapitalOne', 'Red Bull', 'JD', 'HubSpot', 'XBOX', 'Emirates', 'Shark NINJA', 'CapitalOne', 'Red Bull', 'JD'];
+
+  const segment = (
+    <div className="flex shrink-0 items-center gap-12 md:gap-20 lg:gap-24">
+      {logos.map((logo, i) => (
+        <span key={`${logo}-${i}`} className="text-lg font-bold tracking-tighter text-black/50 md:text-xl">
+          {logo}
+        </span>
+      ))}
+    </div>
+  );
 
   return (
-    <section className="bg-[#EFEEEC] text-[#111212] pt-12 pb-24 md:pb-32 overflow-hidden rounded-t-[2.5rem] md:rounded-t-[4rem] relative z-20">
-      {/* Scrolling Marquee */}
-      <div className="w-full flex overflow-hidden border-b border-gray-300 pb-12 mb-16 md:mb-24">
-        <motion.div
-          className="flex space-x-16 md:space-x-32 items-center whitespace-nowrap px-8"
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ repeat: Infinity, ease: "linear", duration: 30 }}
-        >
-          {logos.map((logo, i) => (
-            <span key={i} className="text-2xl md:text-3xl font-bold tracking-tighter opacity-70">
-              {logo}
+    <section className="relative z-20 overflow-hidden bg-white pb-16 text-black md:pb-20">
+      {/* Agency strip + client marquee */}
+      <div className="border-b border-gray-300/60 px-2 py-6 md:px-6">
+        <div className="mx-auto flex w-full max-w-[2000px] flex-col gap-6 md:flex-row md:items-center md:gap-10">
+          <div className="flex shrink-0 items-center gap-3 text-black/70">
+            <span className="text-xs font-bold tracking-tight md:text-sm">The agency behind ...</span>
+            <span className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-400/80 text-xs font-light text-black md:h-8 md:w-8">
+              +
             </span>
-          ))}
-        </motion.div>
+          </div>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <motion.div className="flex w-max" animate={{ x: ['0%', '-50%'] }} transition={{ repeat: Infinity, ease: 'linear', duration: 32 }}>
+              {segment}
+              {segment}
+            </motion.div>
+          </div>
+        </div>
       </div>
 
-      <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
-
-          {/* Left Column */}
-          <div className="lg:col-span-5 flex flex-col justify-between">
+      <div className="mx-auto w-full max-w-[2000px] px-2 pt-10 md:px-6 md:pt-16 lg:pt-20">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-16 md:gap-24 lg:gap-32">
+          {/* Left Column: Descriptive Text - Extreme Left */}
+          <div className="flex-shrink-0 lg:w-[28%] lg:pb-32">
             <Reveal>
-              <div className="text-sm font-bold tracking-wide flex items-center gap-4 mb-24">
-                <span>The agency behind ...</span>
-                <span className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-lg">+</span>
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.2}>
-              <p className="text-xl md:text-3xl font-semibold tracking-tight leading-snug max-w-lg">
-                A global team of search-first content marketers engineering semantic relevancy & category signals for both the internet and people
+              <p className="max-w-xs text-base font-medium leading-[1.3] tracking-tight text-black md:text-lg">
+                A global team of search-first content marketers engineering semantic relevancy &amp; category signals for both the
+                internet and people.
               </p>
             </Reveal>
           </div>
 
-          {/* Right Column */}
-          <div className="lg:col-span-7 flex flex-col justify-end">
-            <Reveal delay={0.3}>
-              <h2 className="text-[4rem] md:text-[6rem] lg:text-[7.5rem] font-black tracking-tighter leading-[0.9] mb-12">
-                Driving Demand &<br />
-                Discovery
-                <img
-                  src="https://picsum.photos/80/80?random=30"
-                  alt="Discovery icon"
-                  className="inline-block w-16 h-16 md:w-24 md:h-24 rounded-2xl object-cover align-baseline ml-4 border border-gray-300"
-                />
+          {/* Right Column: Hero Headline & Buttons - Extreme Right */}
+          <div className="flex flex-col items-start lg:items-start lg:w-auto max-w-4xl">
+            <Reveal delay={0.15}>
+              <h2 className="mb-8 text-[2.5rem] font-bold leading-[0.85] tracking-[-0.04em] text-black sm:text-4xl md:mb-10 md:text-5xl lg:text-[5.5rem] xl:text-[6.5rem]">
+                <span className="block">Driving Demand &amp;</span>
+                <span className="flex items-center gap-4">
+                  <span>Discovery</span>
+                  <img
+                    src="https://picsum.photos/100/100?random=30"
+                    alt=""
+                    className="h-8 w-8 rounded-xl border border-gray-300/80 object-cover md:h-10 md:w-10 lg:h-12 lg:w-12 lg:rounded-2xl"
+                  />
+                </span>
               </h2>
             </Reveal>
 
-            <Reveal delay={0.4} className="flex gap-4">
-              <button className="bg-white px-6 py-3 rounded-full text-[13px] font-bold tracking-wide border border-gray-200 hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm flex items-center gap-2">
-                Our Story <span>↗</span>
+            <Reveal delay={0.25} className="flex flex-wrap gap-4">
+              <button
+                type="button"
+                className="group flex items-center gap-2.5 rounded-full border border-gray-300 bg-white px-6 py-3 text-[12px] font-bold tracking-tight text-black transition-all duration-300 hover:bg-black hover:text-white"
+              >
+                Our Story <span className="transition-transform duration-300 group-hover:translate-x-1">↗</span>
               </button>
-              <button className="bg-transparent px-6 py-3 rounded-full text-[13px] font-bold tracking-wide border border-gray-300 hover:bg-white hover:scale-105 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center gap-2">
-                Our Services <span>↗</span>
+              <button
+                type="button"
+                className="group flex items-center gap-2.5 rounded-full border border-gray-300 bg-white px-6 py-3 text-[12px] font-bold tracking-tight text-black transition-all duration-300 hover:bg-black hover:text-white"
+              >
+                Our Services <span className="transition-transform duration-300 group-hover:translate-x-1">↗</span>
               </button>
             </Reveal>
           </div>
-
         </div>
       </div>
     </section>
@@ -399,17 +528,13 @@ const FeaturedWork = React.forwardRef((props, ref) => {
   ];
 
   const containerRef = useRef(null);
-
-  // Merge both refs
-  useEffect(() => {
-    if (ref) {
-      if (typeof ref === 'function') {
-        ref(containerRef.current);
-      } else {
-        ref.current = containerRef.current;
-      }
-    }
-  }, [ref]);
+  const setSectionRef = useCallback(
+    (node) => {
+      containerRef.current = node;
+      assignRef(ref, node);
+    },
+    [ref]
+  );
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -445,31 +570,31 @@ const FeaturedWork = React.forwardRef((props, ref) => {
   const yLeft = useTransform(scrollYProgress, [0, 1], ["20%", "-20%"]);
 
   return (
-    <section ref={containerRef} className="bg-white w-full h-[400vh] relative z-20">
+    <section ref={setSectionRef} className="bg-white w-full h-[400vh] relative z-20">
       <div className="sticky top-0 h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-8 overflow-hidden">
         <div className="bg-[#111212] w-full h-full rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col md:flex-row relative shadow-2xl">
-          
+
           {/* Left Side - Information (Smooth Scrolling Titles) */}
           <div className="w-full md:w-1/2 h-full flex flex-col justify-center px-8 md:px-16 lg:px-20 relative z-20 bg-[#111212]">
             <div className="absolute top-12 md:top-20 left-8 md:left-16 lg:left-20">
               <h2 className="text-sm font-bold tracking-[0.2em] uppercase text-[#EFEEEC] opacity-60">Featured Work</h2>
             </div>
-            
+
             <div className="relative h-[60vh] flex flex-col justify-center overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-[#111212] to-transparent z-30" />
               <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#111212] to-transparent z-30" />
-              
-              <motion.div 
+
+              <motion.div
                 style={{ y: yLeft }}
                 className="flex flex-col space-y-4"
               >
                 {works.map((work, i) => (
-                  <WorkTitle 
-                    key={i} 
-                    work={work} 
-                    i={i} 
-                    total={works.length} 
-                    scrollYProgress={scrollYProgress} 
+                  <WorkTitle
+                    key={i}
+                    work={work}
+                    i={i}
+                    total={works.length}
+                    scrollYProgress={scrollYProgress}
                   />
                 ))}
               </motion.div>
@@ -478,25 +603,25 @@ const FeaturedWork = React.forwardRef((props, ref) => {
 
           {/* Right Side - Animated Scrolling Column */}
           <div className="w-full md:w-1/2 h-full relative overflow-hidden px-4 md:px-8">
-            <motion.div 
+            <motion.div
               style={{ y: yRight }}
               className="flex flex-col gap-8 py-[25vh]"
             >
               {works.map((work, i) => (
                 <div key={i} className="featured-work-image w-full flex-shrink-0">
-                  <div 
-                    className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-900 shadow-xl group cursor-none"
+                  <div
+                    className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-900 shadow-xl group"
                     onMouseEnter={() => setIsHovering(i)}
                     onMouseLeave={() => setIsHovering(null)}
                     onMouseMove={(e) => handleMouseMove(e, i)}
                   >
                     {/* Main Image */}
-                    <img 
-                      src={work.img} 
-                      alt={work.client} 
-                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" 
+                    <img
+                      src={work.img}
+                      alt={work.client}
+                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                     />
-                    
+
                     {/* Hover Overlay */}
                     <div className={cn(
                       "absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out flex flex-col justify-between p-8 md:p-12 z-10",
@@ -505,17 +630,17 @@ const FeaturedWork = React.forwardRef((props, ref) => {
                       {/* Top text on hover */}
                       <div className="transform -translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
                         <h4 className="text-black text-2xl md:text-4xl font-bold leading-tight tracking-tight max-w-[80%]">
-                          {i === 0 ? "Building the UK's leading beauty dupe brand" : 
-                           i === 1 ? "Revolutionizing the way the world pays" : 
-                           i === 2 ? "Driving demand in the B2B trade sector" :
-                           i === 3 ? "Scaling global reach for tech pioneers" :
-                           i === 4 ? "Redefining retail excellence at scale" : 
-                           "Crafting unforgettable travel experiences"}
+                          {i === 0 ? "Building the UK's leading beauty dupe brand" :
+                            i === 1 ? "Revolutionizing the way the world pays" :
+                              i === 2 ? "Driving demand in the B2B trade sector" :
+                                i === 3 ? "Scaling global reach for tech pioneers" :
+                                  i === 4 ? "Redefining retail excellence at scale" :
+                                    "Crafting unforgettable travel experiences"}
                         </h4>
                       </div>
 
                       {/* Custom Follower Cursor */}
-                      <motion.div 
+                      <motion.div
                         className="pointer-events-none absolute z-50 flex items-center justify-center"
                         style={{
                           left: mouseX,
@@ -567,14 +692,14 @@ const ServiceItem = ({ title, delay }) => {
 
   return (
     <Reveal delay={delay}>
-      <div 
-        className="relative py-4 md:py-6 border-b border-gray-300 group cursor-pointer transition-all duration-500"
+      <div
+        className="relative py-8 md:py-10 border-b border-gray-300 group cursor-pointer transition-all duration-500"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Default Text (Visible when NOT hovered) */}
         <div className={cn(
-          "text-3xl md:text-4xl lg:text-[3.2rem] font-bold tracking-tight transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "text-4xl md:text-5xl lg:text-[4rem] font-semibold tracking-tight transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
           isHovered ? "opacity-0 translate-x-10" : "opacity-100 translate-x-0"
         )}>
           {title}
@@ -587,14 +712,14 @@ const ServiceItem = ({ title, delay }) => {
         )}>
           {/* Background Container with Image */}
           <div className="absolute inset-y-1.5 md:inset-y-2 left-0 right-0 rounded-full overflow-hidden shadow-lg transform scale-y-[0.9] group-hover:scale-y-100 transition-transform duration-500">
-             <img src={randomImg} className="w-full h-full object-cover" alt="" />
-             <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+            <img src={randomImg} className="w-full h-full object-cover" alt="" />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
           </div>
-          
+
           {/* Arrow and Text */}
           <div className="relative z-20 flex items-center gap-6 text-white ml-2">
-            <span className="text-4xl md:text-5xl lg:text-[4rem] font-light leading-none transform group-hover:rotate-0 -rotate-12 transition-transform duration-500">↗</span>
-            <span className="text-3xl md:text-4xl lg:text-[3.2rem] font-bold tracking-tighter">{title}</span>
+            <span className="text-4xl md:text-5xl lg:text-[4.5rem] font-light leading-none transform group-hover:rotate-0 -rotate-12 transition-transform duration-500">↗</span>
+            <span className="text-4xl md:text-5xl lg:text-[4rem] font-semibold tracking-tighter">{title}</span>
           </div>
         </div>
       </div>
@@ -602,27 +727,82 @@ const ServiceItem = ({ title, delay }) => {
   );
 };
 
-const ServicesAndBanner = () => {
+const ParallaxMarquee = ({ children, baseVelocity = -0.2 }) => {
+  const baseX = useMotionValue(0);
+  const { scrollY } = useScroll();
+  const scrollVelocity = useVelocity(scrollY);
+  const smoothVelocity = useSpring(scrollVelocity, {
+    damping: 50,
+    stiffness: 400
+  });
+  const velocityFactor = useTransform(smoothVelocity, [-1000, 1000], [5, -5], {
+    clamp: false
+  });
+
+  // Wrap values to ensure seamless looping
+  const x = useTransform(baseX, (v) => `${wrap(-20, -45, v)}%`);
+
+  useAnimationFrame((t, delta) => {
+    // baseVelocity is the constant drift to the left
+    let moveBy = baseVelocity * (delta / 1000);
+
+    // velocityFactor adds/subtracts from that drift based on scroll
+    // but the baseVelocity will eventually win out when scrolling stops
+    moveBy += velocityFactor.get() * (delta / 1000);
+
+    baseX.set(baseX.get() + moveBy);
+  });
+
   return (
-    <section className="bg-[#EFEEEC] text-[#111212] pt-24 pb-32 relative z-30 rounded-t-[2.5rem] md:rounded-t-[4rem]">
-      <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
+    <div className="flex overflow-hidden whitespace-nowrap flex-nowrap">
+      <motion.div className="flex whitespace-nowrap flex-nowrap" style={{ x }}>
+        <span>{children} </span>
+        <span>{children} </span>
+        <span>{children} </span>
+        <span>{children} </span>
+      </motion.div>
+    </div>
+  );
+};
+
+const ServicesAndBanner = () => {
+  const pairRow = (
+    <div className="flex items-center">
+      {[0, 1].map((pair) => (
+        <div key={pair} className="flex items-center gap-6 pr-12 md:gap-12 md:pr-24 lg:gap-16 lg:pr-32">
+          <h2 className="whitespace-nowrap text-[5rem] md:text-[8rem] lg:text-[10rem] font-[900] leading-none tracking-tighter text-black">
+            Chasing Consumers Not Algorithms
+          </h2>
+          <img
+            src="https://picsum.photos/240/240?random=51"
+            alt=""
+            className="h-20 w-20 shrink-0 rounded-3xl border border-gray-300 object-cover md:h-36 md:w-36 lg:h-44 lg:w-44 xl:h-52 xl:w-52"
+          />
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <section className="bg-white text-black pt-24 pb-32 relative z-30">
+      <div className="max-w-[1920px] mx-auto px-6 md:px-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 md:mb-24">
           <Reveal>
-            <h2 className="text-6xl md:text-[5.5rem] lg:text-[7.5rem] font-bold tracking-tighter leading-none flex items-center gap-4">
-              Our 
-              <img src="https://picsum.photos/120/120?random=50" className="w-16 h-16 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-3xl object-cover -mt-2" alt="Services" />
+            <h2 className="text-5xl md:text-[5rem] lg:text-[6.5rem] font-semibold tracking-tighter leading-none flex items-center gap-4">
+              Our
+              <img src="https://picsum.photos/120/120?random=50" className="w-12 h-12 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-3xl object-cover -mt-2" alt="Services" />
               Services
             </h2>
           </Reveal>
           <Reveal delay={0.2} className="mt-8 md:mt-0">
-            <button className="bg-white px-6 py-3 rounded-full text-[13px] font-bold tracking-wide border border-gray-200 hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm flex items-center gap-2">
+            <button className="bg-white px-8 py-3.5 rounded-full text-[13px] font-bold tracking-wide border border-gray-200 hover:scale-105 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm flex items-center gap-2">
               View All Services <span>↗</span>
             </button>
           </Reveal>
         </div>
 
         <div className="border-t border-gray-300 pt-8 pb-12 md:pb-24">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 lg:gap-x-40 xl:gap-x-64">
             <div className="flex flex-col">
               <ServiceItem title="Digital PR" delay={0.1} />
               <ServiceItem title="Search & Growth Strategy" delay={0.2} />
@@ -637,23 +817,11 @@ const ServicesAndBanner = () => {
         </div>
       </div>
 
-      {/* Marquee Banner */}
-      <div className="w-full overflow-hidden flex pt-8 md:pt-12">
-        <motion.div
-          className="flex whitespace-nowrap items-center"
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ repeat: Infinity, ease: "linear", duration: 25 }}
-        >
-          {/* We repeat the phrase to ensure seamless scrolling */}
-          {[1, 2].map((i) => (
-            <div key={i} className="flex items-center">
-              <h2 className="text-[7rem] md:text-[12rem] lg:text-[15rem] font-bold tracking-tighter leading-none pr-8 flex items-center gap-4 md:gap-8">
-                Chasing Consumers Not Algorithms
-                <img src="https://picsum.photos/240/240?random=51" className="w-20 h-20 md:w-32 md:h-32 lg:w-48 lg:h-48 rounded-3xl object-cover border border-gray-300" alt="Banner image" />
-              </h2>
-            </div>
-          ))}
-        </motion.div>
+      {/* Marquee: Scroll-reactive parallax movement */}
+      <div className="flex w-full pt-8 md:pt-12">
+        <ParallaxMarquee baseVelocity={-2}>
+          {pairRow}
+        </ParallaxMarquee>
       </div>
     </section>
   );
@@ -661,17 +829,13 @@ const ServicesAndBanner = () => {
 
 const LegacyInTheMaking = React.forwardRef((props, ref) => {
   const containerRef = useRef(null);
-
-  // Merge both refs
-  useEffect(() => {
-    if (ref) {
-      if (typeof ref === 'function') {
-        ref(containerRef.current);
-      } else {
-        ref.current = containerRef.current;
-      }
-    }
-  }, [ref]);
+  const setSectionRef = useCallback(
+    (node) => {
+      containerRef.current = node;
+      assignRef(ref, node);
+    },
+    [ref]
+  );
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -715,7 +879,7 @@ const LegacyInTheMaking = React.forwardRef((props, ref) => {
   const transforms = [y0, y1, null];
 
   return (
-    <section ref={containerRef} className="relative h-[300vh] bg-[#EFEEEC] w-full z-10 pb-32">
+    <section ref={setSectionRef} className="relative h-[300vh] bg-white w-full z-10 pb-32">
       <div className="sticky top-0 h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
         <h2 className="absolute top-16 md:top-24 text-xl md:text-2xl font-bold tracking-tight text-center z-50 text-[#111212]">
           Legacy In The Making
@@ -737,7 +901,7 @@ const LegacyInTheMaking = React.forwardRef((props, ref) => {
                 <p className="text-center text-[13px] md:text-[15px] leading-[1.6] font-medium mb-3 max-w-[340px]">
                   {card.text1}
                 </p>
-                  {card.text2 && (
+                {card.text2 && (
                   <p className="text-center text-[13px] md:text-[15px] leading-[1.6] font-medium max-w-[340px]">
                     {card.text2}
                   </p>
@@ -764,8 +928,8 @@ const NewsCard = ({ post, i }) => {
 
   return (
     <Reveal delay={0.1 * (i + 1)}>
-      <div 
-        className="flex flex-col group cursor-none"
+      <div
+        className="flex flex-col group"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onMouseMove={handleMouseMove}
@@ -780,7 +944,7 @@ const NewsCard = ({ post, i }) => {
             )}
           />
 
-          <motion.div 
+          <motion.div
             className="pointer-events-none absolute z-50 flex items-center justify-center"
             style={{
               left: mouseX,
@@ -848,13 +1012,13 @@ const WhatsNew = () => {
       avatar: "https://i.pravatar.cc/100?u=ray"
     },
     {
-      category: "Food/Hospitality/Drink",
-      title: "Rise at Seven Appointed by Langtins to drive demand and retail growth for Noomz",
-      author: "Carrie Rose",
-      time: "2 mins",
-      img: "https://picsum.photos/800/800?random=102",
-      avatar: "https://i.pravatar.cc/100?u=carrie2"
-    }
+      category: 'News',
+      title: 'Rise at Seven Appoints Hollie Lovell as Senior Operations Lead',
+      author: 'Ray Saddiq',
+      time: '3 mins',
+      img: 'https://picsum.photos/800/800?random=102',
+      avatar: 'https://i.pravatar.cc/100?u=hollie',
+    },
   ];
 
   return (
@@ -894,7 +1058,7 @@ const WhatsNew = () => {
 
 const Footer = () => {
   return (
-    <footer className="bg-[#EFEEEC] px-2 pb-2 md:px-3 md:pb-3">
+    <footer className="bg-white px-2 pb-2 md:px-3 md:pb-3">
       <div className="bg-[#111212] text-white rounded-[2.5rem] md:rounded-[3.5rem] pt-12 pb-6 px-6 md:px-10 overflow-hidden">
         <div className="w-full">
           {/* Top Section */}
@@ -1005,8 +1169,16 @@ const Char = ({ char, index, scrollYProgress }) => {
   );
 };
 
-const ScrollingText = () => {
+const ScrollingText = React.forwardRef((props, ref) => {
   const containerRef = useRef(null);
+  const setSectionRef = useCallback(
+    (node) => {
+      containerRef.current = node;
+      assignRef(ref, node);
+    },
+    [ref]
+  );
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
@@ -1016,37 +1188,63 @@ const ScrollingText = () => {
   const text = "Ready to Rise at Seven?";
 
   return (
-    <section ref={containerRef} className="h-screen w-full overflow-hidden bg-white flex items-center">
-      <motion.div style={{ x }} className="whitespace-nowrap flex">
+    <section ref={setSectionRef} className="flex h-screen w-full items-center overflow-hidden bg-white">
+      <motion.div style={{ x }} className="flex whitespace-nowrap">
         {text.split("").map((char, i) => (
-          <Char
-            key={i}
-            char={char}
-            index={i}
-            scrollYProgress={scrollYProgress}
-          />
+          <Char key={i} char={char} index={i} scrollYProgress={scrollYProgress} />
         ))}
       </motion.div>
     </section>
   );
-};
+});
+ScrollingText.displayName = 'ScrollingText';
 
 function App() {
   const heroRef = useRef(null);
   const featuredWorkRef = useRef(null);
   const legacyRef = useRef(null);
+  const scrollingTextRef = useRef(null);
+  const announcementRef = useRef(null);
+
+  const [hoveredNav, setHoveredNav] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const { navVisible, variant, navTopPx } = useSiteNav({
+    heroRef,
+    featuredRef: featuredWorkRef,
+    legacyRef,
+    scrollingRef: scrollingTextRef,
+    announcementRef,
+  });
+
+  useEffect(() => {
+    if (isOpen) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   return (
     <div className="min-h-screen bg-white text-[#111212] font-sans selection:bg-[#111212] selection:text-[#EFEEEC]">
-      <Header heroRef={heroRef} featuredWorkRef={featuredWorkRef} legacyRef={legacyRef} />
+      <AnnouncementMarquee ref={announcementRef} />
+      <NavBarInner
+        hoveredNav={hoveredNav}
+        setHoveredNav={setHoveredNav}
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+        variant={variant}
+        visible={navVisible}
+        navTopPx={navTopPx}
+      />
       <main>
-        <Hero ref={heroRef} />
+        <HeroWithNav ref={heroRef} />
         <DemandAndDiscovery />
         <FeaturedWork ref={featuredWorkRef} />
         <ServicesAndBanner />
         <LegacyInTheMaking ref={legacyRef} />
         <WhatsNew />
-        <ScrollingText />
+        <ScrollingText ref={scrollingTextRef} />
       </main>
       <Footer />
     </div>
