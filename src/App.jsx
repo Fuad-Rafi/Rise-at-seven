@@ -484,7 +484,7 @@ const WorkTitle = ({ work, i, total, scrollYProgress, setIsHovering }) => {
   const opacity = useTransform(
     scrollYProgress,
     [Math.max(0, (i - 1.5) / total), i / total, Math.min(1, (i + 1.5) / total)],
-    [0.1, 1, 0.1]
+    [1, 1, 1]
   );
 
   const scale = useTransform(
@@ -501,17 +501,17 @@ const WorkTitle = ({ work, i, total, scrollYProgress, setIsHovering }) => {
       onMouseLeave={() => setIsHovering && setIsHovering(null)}
     >
       <div className="flex items-start">
-        <h3 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4.5rem] xl:text-[5.5rem] font-bold tracking-tighter leading-[0.9] text-[#EFEEEC]">
+        <h3 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4.5rem] xl:text-[5.5rem] font-bold tracking-tighter leading-[0.9] text-white">
           {firstPart}
         </h3>
         {work.year && (
-          <span className="font-mono text-[9px] md:text-[11px] text-[#EFEEEC] ml-2 mt-4 opacity-40">
+          <span className="font-mono text-[9px] md:text-[11px] text-white ml-2 mt-4 opacity-40">
             {work.year}
           </span>
         )}
       </div>
       {secondPart && (
-        <h3 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4.5rem] xl:text-[5.5rem] font-bold tracking-tighter leading-[0.9] text-gray-600">
+        <h3 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4.5rem] xl:text-[5.5rem] font-bold tracking-tighter leading-[0.9] text-white">
           {secondPart}
         </h3>
       )}
@@ -576,7 +576,7 @@ const FeaturedWork = React.forwardRef((props, ref) => {
     useTransform(
       scrollYProgress,
       [Math.max(0, (i - 1.5) / works.length), i / works.length, Math.min(1, (i + 1.5) / works.length)],
-      [0.1, 1, 0.1]
+      [1, 1, 1]
     )
   );
 
@@ -602,9 +602,9 @@ const FeaturedWork = React.forwardRef((props, ref) => {
         <div className="bg-[#111212] w-full h-full rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col md:flex-row relative shadow-2xl">
 
           {/* Left Side - Information (Smooth Scrolling Titles) */}
-          <div className="w-full md:w-1/2 h-full flex flex-col justify-center px-8 md:px-16 lg:px-20 relative z-20 bg-[#111212]">
+          <div className="w-full md:w-1/2 h-full flex flex-col justify-center px-8 md:px-16 lg:px-20 relative z-20 bg-[#111212] text-white">
             <div className="absolute top-12 md:top-20 left-8 md:left-16 lg:left-20">
-              <h2 className="text-sm font-bold tracking-[0.2em] uppercase text-[#EFEEEC] opacity-60">Featured Work</h2>
+              <h2 className="text-sm font-bold tracking-[0.2em] uppercase text-white opacity-60">Featured Work</h2>
             </div>
 
             <div className="relative h-[60vh] flex flex-col justify-center overflow-hidden">
@@ -644,7 +644,7 @@ const FeaturedWork = React.forwardRef((props, ref) => {
                     className="featured-work-image w-full flex-shrink-0"
                   >
                     <div
-                      className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-gray-900 shadow-xl group"
+                      className="relative w-full aspect-[4/3] rounded-2xl md:rounded-3xl overflow-hidden bg-white shadow-xl group"
                       onMouseEnter={() => setIsHovering(i)}
                       onMouseLeave={() => setIsHovering(null)}
                       onMouseMove={(e) => handleMouseMove(e, i)}
@@ -653,7 +653,7 @@ const FeaturedWork = React.forwardRef((props, ref) => {
                       <img
                         src={work.img}
                         alt={work.client}
-                        className="absolute inset-0 w-full h-full object-cover opacity-80 transition-transform duration-700"
+                        className="absolute inset-0 w-full h-full object-cover opacity-100 brightness-110 contrast-105 saturate-110 transition-transform duration-700 group-hover:scale-105"
                       />
 
                       {/* Hover Overlay */}
@@ -709,7 +709,7 @@ const FeaturedWork = React.forwardRef((props, ref) => {
                       hoverActive ? 'opacity-0' : 'opacity-100',
                       'group-hover:opacity-0'
                     )}>
-                      <button className="bg-[#111212]/60 backdrop-blur-md px-4 py-2 md:px-5 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-bold tracking-wide border border-white/20 flex items-center gap-2 hover:bg-white hover:text-black transition-colors duration-300">
+                      <button className="bg-[#111212]/60 text-white backdrop-blur-md px-4 py-2 md:px-5 md:py-2.5 rounded-full text-[10px] md:text-[12px] font-bold tracking-wide border border-white/20 flex items-center gap-2 hover:bg-white hover:text-black transition-colors duration-300">
                         <span className="text-lg leading-none mt-[-2px]">⚲</span> {work.tag} <span className="ml-1">↘</span>
                       </button>
                     </div>
